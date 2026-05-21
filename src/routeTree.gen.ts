@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthSetorRouteImport } from './routes/auth.$setor'
+import { Route as AppSetorRouteImport } from './routes/app.$setor'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSetorRoute = AuthSetorRouteImport.update({
+  id: '/auth/$setor',
+  path: '/auth/$setor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppSetorRoute = AppSetorRouteImport.update({
+  id: '/app/$setor',
+  path: '/app/$setor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app/$setor': typeof AppSetorRoute
+  '/auth/$setor': typeof AuthSetorRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app/$setor': typeof AppSetorRoute
+  '/auth/$setor': typeof AuthSetorRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app/$setor': typeof AppSetorRoute
+  '/auth/$setor': typeof AuthSetorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/app/$setor' | '/auth/$setor'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/app/$setor' | '/auth/$setor'
+  id: '__root__' | '/' | '/app/$setor' | '/auth/$setor'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppSetorRoute: typeof AppSetorRoute
+  AuthSetorRoute: typeof AuthSetorRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +68,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/$setor': {
+      id: '/auth/$setor'
+      path: '/auth/$setor'
+      fullPath: '/auth/$setor'
+      preLoaderRoute: typeof AuthSetorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/$setor': {
+      id: '/app/$setor'
+      path: '/app/$setor'
+      fullPath: '/app/$setor'
+      preLoaderRoute: typeof AppSetorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppSetorRoute: AppSetorRoute,
+  AuthSetorRoute: AuthSetorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
