@@ -70,13 +70,17 @@ function AuthPage() {
 }
 
 function SignIn({ setor }: { setor: Setor }) {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
+    // Permite login do administrador padrão usando o usuário "Admin"
+    const email = identifier.trim().toLowerCase() === "admin"
+      ? `admin@${setor}.local`
+      : identifier.trim();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast.error(error.message);
@@ -88,8 +92,14 @@ function SignIn({ setor }: { setor: Setor }) {
   return (
     <form onSubmit={handle} className="space-y-4 pt-4">
       <div className="space-y-2">
-        <Label>E-mail</Label>
-        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <Label>E-mail ou usuário</Label>
+        <Input
+          type="text"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          placeholder='Use "Admin" para o administrador padrão'
+          required
+        />
       </div>
       <div className="space-y-2">
         <Label>Senha</Label>
@@ -99,6 +109,9 @@ function SignIn({ setor }: { setor: Setor }) {
         {busy && <Loader2 className="size-4 mr-2 animate-spin" />}
         Entrar em {setorLabel(setor)}
       </Button>
+      <p className="text-xs text-muted-foreground text-center">
+        Administrador padrão: <span className="font-mono">Admin</span> / <span className="font-mono">123456</span>
+      </p>
     </form>
   );
 }
