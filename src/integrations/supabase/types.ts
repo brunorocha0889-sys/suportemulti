@@ -14,16 +14,154 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chamados: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          setor_destino: Database["public"]["Enums"]["setor_tipo"]
+          sla_vencimento: string | null
+          solicitante_nome: string
+          solicitante_ramal: string
+          solicitante_setor: string
+          status: Database["public"]["Enums"]["chamado_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          setor_destino: Database["public"]["Enums"]["setor_tipo"]
+          sla_vencimento?: string | null
+          solicitante_nome: string
+          solicitante_ramal: string
+          solicitante_setor: string
+          status?: Database["public"]["Enums"]["chamado_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          setor_destino?: Database["public"]["Enums"]["setor_tipo"]
+          sla_vencimento?: string | null
+          solicitante_nome?: string
+          solicitante_ramal?: string
+          solicitante_setor?: string
+          status?: Database["public"]["Enums"]["chamado_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      perfis: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          setor: Database["public"]["Enums"]["setor_tipo"]
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email: string
+          full_name: string
+          id: string
+          role?: Database["public"]["Enums"]["user_role"]
+          setor: Database["public"]["Enums"]["setor_tipo"]
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          setor?: Database["public"]["Enums"]["setor_tipo"]
+        }
+        Relationships: []
+      }
+      sla_config: {
+        Row: {
+          horas_resolucao: number
+          horas_resposta: number
+          setor: Database["public"]["Enums"]["setor_tipo"]
+          updated_at: string
+        }
+        Insert: {
+          horas_resolucao?: number
+          horas_resposta?: number
+          setor: Database["public"]["Enums"]["setor_tipo"]
+          updated_at?: string
+        }
+        Update: {
+          horas_resolucao?: number
+          horas_resposta?: number
+          setor?: Database["public"]["Enums"]["setor_tipo"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      solucoes_chamados: {
+        Row: {
+          admin_id: string
+          chamado_id: string
+          data_resolucao: string
+          descricao_solucao: string
+          id: string
+          tempo_gasto_minutos: number
+        }
+        Insert: {
+          admin_id: string
+          chamado_id: string
+          data_resolucao?: string
+          descricao_solucao: string
+          id?: string
+          tempo_gasto_minutos?: number
+        }
+        Update: {
+          admin_id?: string
+          chamado_id?: string
+          data_resolucao?: string
+          descricao_solucao?: string
+          id?: string
+          tempo_gasto_minutos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solucoes_chamados_chamado_id_fkey"
+            columns: ["chamado_id"]
+            isOneToOne: false
+            referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_user_setor: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["setor_tipo"]
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      chamado_status: "aberto" | "em_andamento" | "finalizado" | "atrasado"
+      setor_tipo: "patrimonio" | "refrigeracao"
+      user_role: "admin" | "secundario" | "usuario"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +288,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      chamado_status: ["aberto", "em_andamento", "finalizado", "atrasado"],
+      setor_tipo: ["patrimonio", "refrigeracao"],
+      user_role: ["admin", "secundario", "usuario"],
+    },
   },
 } as const
