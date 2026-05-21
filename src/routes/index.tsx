@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Package, Snowflake, ArrowRight } from "lucide-react";
+import { Package, Snowflake, ArrowRight, Send } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Index });
 
@@ -22,6 +22,7 @@ function Index() {
         <div className="grid sm:grid-cols-2 gap-6">
           <SetorCard
             to="/auth/patrimonio"
+            quickTo="/abrir/patrimonio"
             title="Patrimônio"
             description="Solicitações de bens, mobiliário, transferências e manutenção patrimonial."
             icon={<Package className="size-8" />}
@@ -29,6 +30,7 @@ function Index() {
           />
           <SetorCard
             to="/auth/refrigeracao"
+            quickTo="/abrir/refrigeracao"
             title="Refrigeração"
             description="Manutenção, instalação e atendimento de equipamentos de refrigeração."
             icon={<Snowflake className="size-8" />}
@@ -45,27 +47,37 @@ function Index() {
 }
 
 function SetorCard({
-  to, title, description, icon, accent,
+  to, quickTo, title, description, icon, accent,
 }: {
-  to: string; title: string; description: string; icon: React.ReactNode;
+  to: string; quickTo: string; title: string; description: string; icon: React.ReactNode;
   accent: "patrimonio" | "refrigeracao";
 }) {
   const bg = accent === "patrimonio" ? "bg-patrimonio" : "bg-refrigeracao";
   const fg = accent === "patrimonio" ? "text-patrimonio-foreground" : "text-refrigeracao-foreground";
   return (
-    <Link
-      to={to}
-      className="group relative overflow-hidden rounded-2xl border bg-card p-8 transition-all hover:shadow-xl hover:-translate-y-1"
-    >
+    <div className="group relative overflow-hidden rounded-2xl border bg-card p-8 transition-all hover:shadow-xl">
       <div className={`size-16 rounded-xl ${bg} ${fg} grid place-items-center mb-5 shadow-md`}>
         {icon}
       </div>
       <h2 className="text-2xl font-semibold text-card-foreground">{title}</h2>
       <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{description}</p>
-      <div className="mt-6 flex items-center gap-2 text-sm font-medium text-primary">
-        Acessar setor
-        <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+
+      <div className="mt-6 flex flex-col sm:flex-row gap-2">
+        <Link
+          to={to}
+          className="inline-flex items-center justify-center gap-2 rounded-md border bg-background px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+        >
+          Acessar setor
+          <ArrowRight className="size-4" />
+        </Link>
+        <Link
+          to={quickTo}
+          className={`inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium ${bg} ${fg} hover:opacity-90 transition-opacity`}
+        >
+          <Send className="size-4" />
+          Abrir chamado sem login
+        </Link>
       </div>
-    </Link>
+    </div>
   );
 }
