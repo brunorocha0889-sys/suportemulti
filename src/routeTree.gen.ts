@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthSetorRouteImport } from './routes/auth.$setor'
 import { Route as AppSetorRouteImport } from './routes/app.$setor'
+import { Route as AbrirSetorRouteImport } from './routes/abrir.$setor'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,33 +29,42 @@ const AppSetorRoute = AppSetorRouteImport.update({
   path: '/app/$setor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AbrirSetorRoute = AbrirSetorRouteImport.update({
+  id: '/abrir/$setor',
+  path: '/abrir/$setor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/abrir/$setor': typeof AbrirSetorRoute
   '/app/$setor': typeof AppSetorRoute
   '/auth/$setor': typeof AuthSetorRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/abrir/$setor': typeof AbrirSetorRoute
   '/app/$setor': typeof AppSetorRoute
   '/auth/$setor': typeof AuthSetorRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/abrir/$setor': typeof AbrirSetorRoute
   '/app/$setor': typeof AppSetorRoute
   '/auth/$setor': typeof AuthSetorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app/$setor' | '/auth/$setor'
+  fullPaths: '/' | '/abrir/$setor' | '/app/$setor' | '/auth/$setor'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/app/$setor' | '/auth/$setor'
-  id: '__root__' | '/' | '/app/$setor' | '/auth/$setor'
+  to: '/' | '/abrir/$setor' | '/app/$setor' | '/auth/$setor'
+  id: '__root__' | '/' | '/abrir/$setor' | '/app/$setor' | '/auth/$setor'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AbrirSetorRoute: typeof AbrirSetorRoute
   AppSetorRoute: typeof AppSetorRoute
   AuthSetorRoute: typeof AuthSetorRoute
 }
@@ -82,14 +92,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSetorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/abrir/$setor': {
+      id: '/abrir/$setor'
+      path: '/abrir/$setor'
+      fullPath: '/abrir/$setor'
+      preLoaderRoute: typeof AbrirSetorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AbrirSetorRoute: AbrirSetorRoute,
   AppSetorRoute: AppSetorRoute,
   AuthSetorRoute: AuthSetorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
