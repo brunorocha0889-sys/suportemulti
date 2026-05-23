@@ -11,13 +11,14 @@ import { AlertTriangle, Inbox, CheckCircle2, Clock } from "lucide-react";
 
 export interface ChamadoRow {
   id: string;
+  numero_os: string | null;
   setor_destino: Setor;
   solicitante_nome: string;
   solicitante_setor: string;
-  solicitante_ramal: string;
+  solicitante_ramal: string | null;
   descricao: string;
   status: ChamadoStatus;
-  user_id: string;
+  user_id: string | null;
   sla_vencimento: string | null;
   created_at: string;
   updated_at: string;
@@ -66,8 +67,15 @@ export function ChamadoCard({ c, onClick }: { c: ChamadoRow; onClick?: () => voi
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
+            {c.numero_os && (
+              <span className="text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                {c.numero_os}
+              </span>
+            )}
             <span className="font-semibold text-card-foreground">{c.solicitante_nome}</span>
-            <span className="text-xs text-muted-foreground">• Ramal {c.solicitante_ramal}</span>
+            {c.solicitante_ramal && (
+              <span className="text-xs text-muted-foreground">• Ramal {c.solicitante_ramal}</span>
+            )}
             <span className="text-xs text-muted-foreground">• {c.solicitante_setor}</span>
           </div>
           <p className="mt-1.5 text-sm text-card-foreground line-clamp-2">{c.descricao}</p>
