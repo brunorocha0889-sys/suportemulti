@@ -128,7 +128,13 @@ function StaffView({ setor, isAdmin }: { setor: Setor; isAdmin: boolean }) {
 
   const filtered = useMemo(() => {
     return (data ?? []).filter((c) => {
-      if (search && !c.solicitante_nome.toLowerCase().includes(search.toLowerCase()) && !c.descricao.toLowerCase().includes(search.toLowerCase())) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const hit = c.solicitante_nome.toLowerCase().includes(q)
+          || c.descricao.toLowerCase().includes(q)
+          || (c.numero_os ?? "").toLowerCase().includes(q);
+        if (!hit) return false;
+      }
       if (status === "todos") return true;
       if (status === "atrasado") return isSlaVencido(c.sla_vencimento, c.status) && c.status !== "finalizado";
       return c.status === (status as ChamadoStatus);
