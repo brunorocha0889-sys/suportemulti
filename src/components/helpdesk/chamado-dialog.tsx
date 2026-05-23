@@ -97,7 +97,14 @@ export function ChamadoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Chamado de {chamado.solicitante_nome}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 flex-wrap">
+            {chamado.numero_os && (
+              <span className="text-xs font-mono font-semibold px-2 py-1 rounded bg-primary/10 text-primary">
+                {chamado.numero_os}
+              </span>
+            )}
+            {chamado.solicitante_nome}
+          </DialogTitle>
           <DialogDescription>Aberto em {fmtDate(chamado.created_at)}</DialogDescription>
         </DialogHeader>
 
@@ -106,7 +113,10 @@ export function ChamadoDialog({
             <Badge className={`${statusColor[chamado.status]} border`} variant="outline">
               {statusLabel[chamado.status]}
             </Badge>
-            <span className="text-xs text-muted-foreground">Ramal {chamado.solicitante_ramal} • {chamado.solicitante_setor}</span>
+            <span className="text-xs text-muted-foreground">
+              {chamado.solicitante_ramal ? `Ramal ${chamado.solicitante_ramal} • ` : ""}
+              {chamado.solicitante_setor}
+            </span>
           </div>
 
           <div>

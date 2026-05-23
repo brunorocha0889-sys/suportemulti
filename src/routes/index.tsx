@@ -1,82 +1,98 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Package, Snowflake, ArrowRight, Send } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { Send, Search, LogIn, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/")({ component: Index });
 
 function Index() {
+  const navigate = useNavigate();
+  const [os, setOs] = useState("");
+
+  const acompanhar = (e: React.FormEvent) => {
+    e.preventDefault();
+    const v = os.trim();
+    if (!v) return;
+    navigate({ to: "/acompanhar", search: { os: v } });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/40">
-      <div className="mx-auto max-w-6xl px-6 py-16">
-        <header className="text-center mb-14">
+      <div className="mx-auto max-w-4xl px-6 py-16">
+        <header className="text-center mb-12">
           <p className="text-sm font-medium text-muted-foreground tracking-widest uppercase mb-3">
             Central de Chamados
           </p>
-          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-foreground">
-            HelpDesk
-          </h1>
+          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight">HelpDesk</h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
-            Escolha o setor para abrir, acompanhar e gerenciar seus chamados.
+            Abra um chamado ou acompanhe uma solicitação existente.
           </p>
         </header>
 
         <div className="grid sm:grid-cols-2 gap-6">
-          <SetorCard
-            to="/auth/patrimonio"
-            quickTo="/abrir/patrimonio"
-            title="Patrimônio"
-            description="Solicitações de bens, mobiliário, transferências e manutenção patrimonial."
-            icon={<Package className="size-8" />}
-            accent="patrimonio"
-          />
-          <SetorCard
-            to="/auth/refrigeracao"
-            quickTo="/abrir/refrigeracao"
-            title="Refrigeração"
-            description="Manutenção, instalação e atendimento de equipamentos de refrigeração."
-            icon={<Snowflake className="size-8" />}
-            accent="refrigeracao"
-          />
+          <Card className="border-2 hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="size-12 rounded-lg bg-primary text-primary-foreground grid place-items-center mb-2">
+                <Send className="size-6" />
+              </div>
+              <CardTitle>Abrir Chamado</CardTitle>
+              <CardDescription>
+                Registre uma nova solicitação para Patrimônio ou Refrigeração. Sem necessidade de login.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full" size="lg">
+                <Link to="/abrir">
+                  <Send className="size-4 mr-2" /> Abrir Chamado
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="size-12 rounded-lg bg-accent text-accent-foreground grid place-items-center mb-2">
+                <Search className="size-6" />
+              </div>
+              <CardTitle>Acompanhar meu chamado</CardTitle>
+              <CardDescription>
+                Informe o número da OS recebido na abertura para consultar o andamento.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={acompanhar} className="flex gap-2">
+                <Input
+                  value={os}
+                  onChange={(e) => setOs(e.target.value)}
+                  placeholder="Ex: OS-2026-00001"
+                  className="font-mono"
+                />
+                <Button type="submit" size="lg">
+                  <Search className="size-4" />
+                </Button>
+              </form>
+              <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                <FileText className="size-3" /> Guarde sempre o número da OS para consultas futuras.
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
-        <footer className="mt-16 text-center text-xs text-muted-foreground">
-          Cada setor opera de forma totalmente independente.
+        <footer className="mt-12 flex flex-col sm:flex-row gap-3 items-center justify-center text-sm">
+          <span className="text-muted-foreground">Equipe interna:</span>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/auth/$setor" params={{ setor: "patrimonio" }}>
+              <LogIn className="size-4 mr-2" /> Patrimônio
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/auth/$setor" params={{ setor: "refrigeracao" }}>
+              <LogIn className="size-4 mr-2" /> Refrigeração
+            </Link>
+          </Button>
         </footer>
-      </div>
-    </div>
-  );
-}
-
-function SetorCard({
-  to, quickTo, title, description, icon, accent,
-}: {
-  to: string; quickTo: string; title: string; description: string; icon: React.ReactNode;
-  accent: "patrimonio" | "refrigeracao";
-}) {
-  const bg = accent === "patrimonio" ? "bg-patrimonio" : "bg-refrigeracao";
-  const fg = accent === "patrimonio" ? "text-patrimonio-foreground" : "text-refrigeracao-foreground";
-  return (
-    <div className="group relative overflow-hidden rounded-2xl border bg-card p-8 transition-all hover:shadow-xl">
-      <div className={`size-16 rounded-xl ${bg} ${fg} grid place-items-center mb-5 shadow-md`}>
-        {icon}
-      </div>
-      <h2 className="text-2xl font-semibold text-card-foreground">{title}</h2>
-      <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{description}</p>
-
-      <div className="mt-6 flex flex-col sm:flex-row gap-2">
-        <Link
-          to={to}
-          className="inline-flex items-center justify-center gap-2 rounded-md border bg-background px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
-        >
-          Acessar setor
-          <ArrowRight className="size-4" />
-        </Link>
-        <Link
-          to={quickTo}
-          className={`inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium ${bg} ${fg} hover:opacity-90 transition-opacity`}
-        >
-          <Send className="size-4" />
-          Abrir chamado sem login
-        </Link>
       </div>
     </div>
   );

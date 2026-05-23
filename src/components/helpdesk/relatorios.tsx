@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
 } from "recharts";
@@ -16,13 +17,14 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 interface Row {
-  id: string; setor_destino: Setor; solicitante_nome: string; solicitante_setor: string;
-  solicitante_ramal: string; descricao: string; status: ChamadoStatus; sla_vencimento: string | null;
-  created_at: string;
+  id: string; numero_os: string | null; setor_destino: Setor;
+  solicitante_nome: string; solicitante_setor: string;
+  solicitante_ramal: string | null; descricao: string;
+  status: ChamadoStatus; sla_vencimento: string | null; created_at: string;
 }
 interface Solucao { chamado_id: string; tempo_gasto_minutos: number; data_resolucao: string }
 
-const COLORS = ["oklch(0.5 0.18 255)", "oklch(0.75 0.16 70)", "oklch(0.65 0.16 150)", "oklch(0.58 0.22 27)"];
+const COLORS = ["oklch(0.5 0.18 255)", "oklch(0.75 0.16 70)", "oklch(0.65 0.16 150)", "oklch(0.58 0.22 27)", "oklch(0.6 0.2 320)", "oklch(0.7 0.18 200)"];
 
 export function RelatoriosTab({ setor }: { setor: Setor }) {
   const today = new Date();
@@ -30,6 +32,7 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
   const [from, setFrom] = useState(monthAgo.toISOString().slice(0, 10));
   const [to, setTo] = useState(today.toISOString().slice(0, 10));
   const [searchUser, setSearchUser] = useState("");
+  const [filterSetor, setFilterSetor] = useState<string>("todos");
 
   const { data: chamados } = useQuery({
     queryKey: ["report-chamados", setor, from, to],
@@ -61,11 +64,18 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
     },
   });
 
+  const setoresUnicos = useMemo(
+    () => Array.from(new Set((chamados ?? []).map((c) => c.solicitante_setor).filter(Boolean))).sort(),
+    [chamados]
+  );
+
   const filtered = useMemo(
-    () => (chamados ?? []).filter((c) =>
-      !searchUser || c.solicitante_nome.toLowerCase().includes(searchUser.toLowerCase())
-    ),
-    [chamados, searchUser]
+    () => (chamados ?? []).filter((c) => {
+      if (searchUser && !c.solicitante_nome.toLowerCase().includes(searchUser.toLowerCase())) return false;
+      if (filterSetor !== "todos" && c.solicitante_setor !== filterSetor) return false;
+      return true;
+    }),
+    [chamados, searchUser, filterSetor]
   );
 
   const byStatus = useMemo(() => {
@@ -84,6 +94,14 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
       map.set(d, (map.get(d) ?? 0) + 1);
     });
     return Array.from(map.entries()).map(([d, v]) => ({ data: d, chamados: v }));
+  }, [filtered]);
+
+  const bySetor = useMemo(() => {
+    const map = new Map<string, number>();
+    filtered.forEach((c) => map.set(c.solicitante_setor, (map.get(c.solicitante_setor) ?? 0) + 1));
+    return Array.from(map.entries())
+      .map(([setor, total]) => ({ setor, total }))
+      .sort((a, b) => b.total - a.total);
   }, [filtered]);
 
   const tempoMedio = useMemo(() => {
@@ -106,36 +124,53 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
     doc.setFontSize(14);
     doc.text(`Relatório de Chamados — ${setor === "patrimonio" ? "Patrimônio" : "Refrigeração"}`, 14, 16);
     doc.setFontSize(10);
-    doc.text(`Período: ${from} a ${to}`, 14, 23);
+    doc.text(`Período: ${from} a ${to}${filterSetor !== "todos" ? ` • Setor: ${filterSetor}` : ""}`, 14, 23);
     autoTable(doc, {
       startY: 28,
-      head: [["Data", "Solicitante", "Setor", "Ramal", "Status", "Descrição"]],
+      head: [["OS", "Data", "Solicitante", "Setor", "Ramal", "Status", "Descrição"]],
       body: filtered.map((c) => [
+        c.numero_os ?? "-",
         fmtDate(c.created_at),
         c.solicitante_nome,
         c.solicitante_setor,
-        c.solicitante_ramal,
+        c.solicitante_ramal ?? "-",
         statusLabel[c.status],
-        c.descricao.slice(0, 60),
+        c.descricao.slice(0, 50),
       ]),
       styles: { fontSize: 8 },
     });
+
+    if (bySetor.length) {
+      const y = (doc as any).lastAutoTable.finalY + 8;
+      doc.setFontSize(12);
+      doc.text("Ranking de setores", 14, y);
+      autoTable(doc, {
+        startY: y + 3,
+        head: [["#", "Setor", "Chamados"]],
+        body: bySetor.map((r, i) => [i + 1, r.setor, r.total]),
+        styles: { fontSize: 9 },
+      });
+    }
+
     doc.save(`chamados-${setor}-${from}-${to}.pdf`);
   };
 
   const exportXLSX = () => {
     const rows = filtered.map((c) => ({
+      OS: c.numero_os ?? "",
       Data: fmtDate(c.created_at),
       Solicitante: c.solicitante_nome,
       Setor: c.solicitante_setor,
-      Ramal: c.solicitante_ramal,
+      Ramal: c.solicitante_ramal ?? "",
       Status: statusLabel[c.status],
       Descrição: c.descricao,
       "SLA Vencimento": c.sla_vencimento ? fmtDate(c.sla_vencimento) : "",
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
+    const ranking = XLSX.utils.json_to_sheet(bySetor.map((r, i) => ({ Posição: i + 1, Setor: r.setor, Chamados: r.total })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Chamados");
+    XLSX.utils.book_append_sheet(wb, ranking, "Ranking por setor");
     XLSX.writeFile(wb, `chamados-${setor}-${from}-${to}.xlsx`);
   };
 
@@ -144,7 +179,7 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
       <Card>
         <CardHeader>
           <CardTitle>Filtros</CardTitle>
-          <CardDescription>Filtre por período e solicitante.</CardDescription>
+          <CardDescription>Filtre por período, solicitante e setor.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid sm:grid-cols-4 gap-3">
@@ -156,9 +191,19 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
               <Label>Até</Label>
               <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>Buscar solicitante</Label>
+            <div className="space-y-1.5">
+              <Label>Solicitante</Label>
               <Input value={searchUser} onChange={(e) => setSearchUser(e.target.value)} placeholder="Nome..." />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Setor solicitante</Label>
+              <Select value={filterSetor} onValueChange={setFilterSetor}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {setoresUnicos.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="flex gap-2 mt-4">
@@ -211,6 +256,49 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
                 <Bar dataKey="value" fill="oklch(0.5 0.18 255)" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Chamados por setor solicitante</CardTitle>
+            <CardDescription>Volume agrupado por setor de origem.</CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={bySetor} layout="vertical" margin={{ left: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" allowDecimals={false} />
+                <YAxis type="category" dataKey="setor" width={100} />
+                <Tooltip />
+                <Bar dataKey="total" fill="oklch(0.6 0.2 320)" radius={[0, 8, 8, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Ranking — Setores que mais abrem chamados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {bySetor.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem dados no período.</p>
+            ) : (
+              <ol className="space-y-2">
+                {bySetor.slice(0, 10).map((r, i) => (
+                  <li key={r.setor} className="flex items-center justify-between border-b pb-2 last:border-0">
+                    <span className="flex items-center gap-3">
+                      <span className="size-7 grid place-items-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+                        {i + 1}
+                      </span>
+                      <span className="font-medium">{r.setor}</span>
+                    </span>
+                    <span className="text-sm font-semibold">{r.total}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
           </CardContent>
         </Card>
 
