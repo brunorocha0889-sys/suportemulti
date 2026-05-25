@@ -96,8 +96,6 @@ function ChamadoForm({ setor, onBack }: { setor: Setor; onBack: () => void }) {
       return toast.error("Preencha todos os campos obrigatórios.");
     }
     setBusy(true);
-    const { data: sessionData } = await supabase.auth.getSession();
-    const uid = sessionData.session?.user.id ?? null;
     const { data, error } = await supabase
       .from("chamados")
       .insert({
@@ -106,7 +104,7 @@ function ChamadoForm({ setor, onBack }: { setor: Setor; onBack: () => void }) {
         solicitante_setor: solicitanteSetor,
         solicitante_ramal: ramal.trim() || null,
         descricao: descricao.trim(),
-        user_id: uid as unknown as string,
+        user_id: null,
       })
       .select("numero_os")
       .single();
