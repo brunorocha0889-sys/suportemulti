@@ -39,7 +39,7 @@ function Index() {
               </div>
               <CardTitle>Abrir Chamado</CardTitle>
               <CardDescription>
-                Registre uma nova solicitação para Patrimônio ou Refrigeração. Sem necessidade de login.
+                Registre uma nova solicitação para Patrimônio ou Climatização. Sem necessidade de login.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -89,7 +89,7 @@ function Index() {
           </Button>
           <Button asChild variant="ghost" size="sm">
             <Link to="/auth/$setor" params={{ setor: "refrigeracao" }}>
-              <LogIn className="size-4 mr-2" /> Refrigeração
+              <LogIn className="size-4 mr-2" /> Climatização
             </Link>
           </Button>
         </footer>
