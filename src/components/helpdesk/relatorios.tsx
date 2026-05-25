@@ -122,7 +122,7 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(14);
-    doc.text(`Relatório de Chamados — ${setor === "patrimonio" ? "Patrimônio" : "Refrigeração"}`, 14, 16);
+    doc.text(`Relatório de Chamados — ${setor === "patrimonio" ? "Patrimônio" : "Climatização"}`, 14, 16);
     doc.setFontSize(10);
     doc.text(`Período: ${from} a ${to}${filterSetor !== "todos" ? ` • Setor: ${filterSetor}` : ""}`, 14, 23);
     autoTable(doc, {

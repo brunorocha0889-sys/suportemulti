@@ -78,4 +78,4 @@ export function useAuth() {
   return c;
 }
 
-export const setorLabel = (s: Setor) => (s === "patrimonio" ? "Patrimônio" : "Refrigeração");
+export const setorLabel = (s: Setor) => (s === "patrimonio" ? "Patrimônio" : "Climatização");
