@@ -109,9 +109,6 @@ function SignIn({ setor }: { setor: Setor }) {
         {busy && <Loader2 className="size-4 mr-2 animate-spin" />}
         Entrar em {setorLabel(setor)}
       </Button>
-      <p className="text-xs text-muted-foreground text-center">
-        Administrador padrão: <span className="font-mono">Admin</span> / <span className="font-mono">123456</span>
-      </p>
     </form>
   );
 }
