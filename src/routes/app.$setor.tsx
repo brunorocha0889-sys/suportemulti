@@ -162,6 +162,7 @@ function StaffView({ setor, isAdmin }: { setor: Setor; isAdmin: boolean }) {
               <SelectItem value="todos">Todos</SelectItem>
               <SelectItem value="aberto">Abertos</SelectItem>
               <SelectItem value="em_andamento">Em andamento</SelectItem>
+              <SelectItem value="em_espera">Em espera</SelectItem>
               <SelectItem value="finalizado">Finalizados</SelectItem>
               <SelectItem value="atrasado">SLA vencido</SelectItem>
             </SelectContent>
