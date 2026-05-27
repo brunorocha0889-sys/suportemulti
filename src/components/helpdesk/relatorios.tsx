@@ -226,20 +226,65 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2"><CardDescription>Total no período</CardDescription></CardHeader>
           <CardContent><p className="text-3xl font-bold">{filtered.length}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardDescription>Tempo médio (min)</CardDescription></CardHeader>
+          <CardHeader className="pb-2"><CardDescription>Tempo médio atend. (min)</CardDescription></CardHeader>
           <CardContent><p className="text-3xl font-bold">{tempoMedio}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardDescription>Soluções registradas</CardDescription></CardHeader>
           <CardContent><p className="text-3xl font-bold">{solucoes?.length ?? 0}</p></CardContent>
         </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardDescription>Em espera agora</CardDescription></CardHeader>
+          <CardContent><p className="text-3xl font-bold">{emEspera.length}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardDescription>Tempo médio pausado</CardDescription></CardHeader>
+          <CardContent><p className="text-3xl font-bold">{fmtMinutes(tempoMedioPausa)}</p></CardContent>
+        </Card>
       </div>
+
+      {emEspera.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PauseCircle className="size-4" /> Chamados em espera
+            </CardTitle>
+            <CardDescription>Motivo da pausa e tempo parado.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-muted-foreground">
+                    <th className="py-2 pr-3">OS</th>
+                    <th className="py-2 pr-3">Solicitante</th>
+                    <th className="py-2 pr-3">Setor</th>
+                    <th className="py-2 pr-3">Motivo / peça</th>
+                    <th className="py-2 pr-3">Parado há</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {emEspera.map((c) => (
+                    <tr key={c.id} className="border-b last:border-0">
+                      <td className="py-2 pr-3 font-mono text-xs">{c.numero_os ?? "—"}</td>
+                      <td className="py-2 pr-3">{c.solicitante_nome}</td>
+                      <td className="py-2 pr-3">{c.solicitante_setor}</td>
+                      <td className="py-2 pr-3">{c.motivo_pausa ?? "—"}</td>
+                      <td className="py-2 pr-3 font-medium">{fmtMinutes(tempoParado(c.pausado_em))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-4">
         <Card>
