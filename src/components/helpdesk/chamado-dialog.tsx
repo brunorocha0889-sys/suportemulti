@@ -35,14 +35,12 @@ export function ChamadoDialog({
   const qc = useQueryClient();
   const [status, setStatus] = useState<ChamadoStatus>("aberto");
   const [solucao, setSolucao] = useState("");
-  const [tempo, setTempo] = useState<number>(0);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (chamado) {
       setStatus(chamado.status);
       setSolucao("");
-      setTempo(0);
     }
   }, [chamado]);
 
