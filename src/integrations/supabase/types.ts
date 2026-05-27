@@ -19,13 +19,16 @@ export type Database = {
           created_at: string
           descricao: string
           id: string
+          motivo_pausa: string | null
           numero_os: string | null
+          pausado_em: string | null
           setor_destino: Database["public"]["Enums"]["setor_tipo"]
           sla_vencimento: string | null
           solicitante_nome: string
           solicitante_ramal: string | null
           solicitante_setor: string
           status: Database["public"]["Enums"]["chamado_status"]
+          tempo_pausado_minutos: number
           updated_at: string
           user_id: string | null
         }
@@ -33,13 +36,16 @@ export type Database = {
           created_at?: string
           descricao: string
           id?: string
+          motivo_pausa?: string | null
           numero_os?: string | null
+          pausado_em?: string | null
           setor_destino: Database["public"]["Enums"]["setor_tipo"]
           sla_vencimento?: string | null
           solicitante_nome: string
           solicitante_ramal?: string | null
           solicitante_setor: string
           status?: Database["public"]["Enums"]["chamado_status"]
+          tempo_pausado_minutos?: number
           updated_at?: string
           user_id?: string | null
         }
@@ -47,13 +53,16 @@ export type Database = {
           created_at?: string
           descricao?: string
           id?: string
+          motivo_pausa?: string | null
           numero_os?: string | null
+          pausado_em?: string | null
           setor_destino?: Database["public"]["Enums"]["setor_tipo"]
           sla_vencimento?: string | null
           solicitante_nome?: string
           solicitante_ramal?: string | null
           solicitante_setor?: string
           status?: Database["public"]["Enums"]["chamado_status"]
+          tempo_pausado_minutos?: number
           updated_at?: string
           user_id?: string | null
         }
@@ -220,7 +229,12 @@ export type Database = {
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      chamado_status: "aberto" | "em_andamento" | "finalizado" | "atrasado"
+      chamado_status:
+        | "aberto"
+        | "em_andamento"
+        | "finalizado"
+        | "atrasado"
+        | "em_espera"
       setor_tipo: "patrimonio" | "refrigeracao"
       user_role: "admin" | "secundario" | "usuario"
     }
@@ -350,7 +364,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      chamado_status: ["aberto", "em_andamento", "finalizado", "atrasado"],
+      chamado_status: [
+        "aberto",
+        "em_andamento",
+        "finalizado",
+        "atrasado",
+        "em_espera",
+      ],
       setor_tipo: ["patrimonio", "refrigeracao"],
       user_role: ["admin", "secundario", "usuario"],
     },

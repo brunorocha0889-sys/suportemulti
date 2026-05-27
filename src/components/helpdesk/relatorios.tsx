@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
 } from "recharts";
-import { fmtDate, statusLabel, isSlaVencido, type ChamadoStatus } from "@/lib/chamado-utils";
-import { FileDown, FileSpreadsheet } from "lucide-react";
+import { fmtDate, fmtMinutes, statusLabel, isSlaVencido, tempoParado, type ChamadoStatus } from "@/lib/chamado-utils";
+import { FileDown, FileSpreadsheet, PauseCircle } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -21,6 +21,7 @@ interface Row {
   solicitante_nome: string; solicitante_setor: string;
   solicitante_ramal: string | null; descricao: string;
   status: ChamadoStatus; sla_vencimento: string | null; created_at: string;
+  pausado_em: string | null; motivo_pausa: string | null; tempo_pausado_minutos: number;
 }
 interface Solucao { chamado_id: string; tempo_gasto_minutos: number; data_resolucao: string }
 
@@ -79,12 +80,24 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
   );
 
   const byStatus = useMemo(() => {
-    const acc: Record<string, number> = { aberto: 0, em_andamento: 0, finalizado: 0, atrasado: 0 };
+    const acc: Record<string, number> = { aberto: 0, em_andamento: 0, em_espera: 0, finalizado: 0, atrasado: 0 };
     filtered.forEach((c) => {
       const eff = isSlaVencido(c.sla_vencimento, c.status) && c.status !== "finalizado" ? "atrasado" : c.status;
       acc[eff] = (acc[eff] ?? 0) + 1;
     });
     return Object.entries(acc).map(([k, v]) => ({ name: statusLabel[k as ChamadoStatus], value: v }));
+  }, [filtered]);
+
+  const emEspera = useMemo(
+    () => filtered.filter((c) => c.status === "em_espera"),
+    [filtered]
+  );
+
+  const tempoMedioPausa = useMemo(() => {
+    const comPausa = filtered.filter((c) => (c.tempo_pausado_minutos ?? 0) > 0);
+    if (!comPausa.length) return 0;
+    const tot = comPausa.reduce((s, c) => s + (c.tempo_pausado_minutos ?? 0), 0);
+    return Math.round(tot / comPausa.length);
   }, [filtered]);
 
   const byDay = useMemo(() => {
@@ -127,15 +140,15 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
     doc.text(`Período: ${from} a ${to}${filterSetor !== "todos" ? ` • Setor: ${filterSetor}` : ""}`, 14, 23);
     autoTable(doc, {
       startY: 28,
-      head: [["OS", "Data", "Solicitante", "Setor", "Ramal", "Status", "Descrição"]],
+      head: [["OS", "Data", "Solicitante", "Setor", "Status", "Pausado (min)", "Motivo pausa"]],
       body: filtered.map((c) => [
         c.numero_os ?? "-",
         fmtDate(c.created_at),
         c.solicitante_nome,
         c.solicitante_setor,
-        c.solicitante_ramal ?? "-",
         statusLabel[c.status],
-        c.descricao.slice(0, 50),
+        String(c.tempo_pausado_minutos ?? 0),
+        (c.motivo_pausa ?? "").slice(0, 40),
       ]),
       styles: { fontSize: 8 },
     });
@@ -164,6 +177,8 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
       Ramal: c.solicitante_ramal ?? "",
       Status: statusLabel[c.status],
       Descrição: c.descricao,
+      "Tempo pausado (min)": c.tempo_pausado_minutos ?? 0,
+      "Motivo pausa": c.motivo_pausa ?? "",
       "SLA Vencimento": c.sla_vencimento ? fmtDate(c.sla_vencimento) : "",
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -213,20 +228,65 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2"><CardDescription>Total no período</CardDescription></CardHeader>
           <CardContent><p className="text-3xl font-bold">{filtered.length}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardDescription>Tempo médio (min)</CardDescription></CardHeader>
+          <CardHeader className="pb-2"><CardDescription>Tempo médio atend. (min)</CardDescription></CardHeader>
           <CardContent><p className="text-3xl font-bold">{tempoMedio}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardDescription>Soluções registradas</CardDescription></CardHeader>
           <CardContent><p className="text-3xl font-bold">{solucoes?.length ?? 0}</p></CardContent>
         </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardDescription>Em espera agora</CardDescription></CardHeader>
+          <CardContent><p className="text-3xl font-bold">{emEspera.length}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardDescription>Tempo médio pausado</CardDescription></CardHeader>
+          <CardContent><p className="text-3xl font-bold">{fmtMinutes(tempoMedioPausa)}</p></CardContent>
+        </Card>
       </div>
+
+      {emEspera.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PauseCircle className="size-4" /> Chamados em espera
+            </CardTitle>
+            <CardDescription>Motivo da pausa e tempo parado.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-muted-foreground">
+                    <th className="py-2 pr-3">OS</th>
+                    <th className="py-2 pr-3">Solicitante</th>
+                    <th className="py-2 pr-3">Setor</th>
+                    <th className="py-2 pr-3">Motivo / peça</th>
+                    <th className="py-2 pr-3">Parado há</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {emEspera.map((c) => (
+                    <tr key={c.id} className="border-b last:border-0">
+                      <td className="py-2 pr-3 font-mono text-xs">{c.numero_os ?? "—"}</td>
+                      <td className="py-2 pr-3">{c.solicitante_nome}</td>
+                      <td className="py-2 pr-3">{c.solicitante_setor}</td>
+                      <td className="py-2 pr-3">{c.motivo_pausa ?? "—"}</td>
+                      <td className="py-2 pr-3 font-medium">{fmtMinutes(tempoParado(c.pausado_em))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-4">
         <Card>

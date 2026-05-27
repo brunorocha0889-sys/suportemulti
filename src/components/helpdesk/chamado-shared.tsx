@@ -22,6 +22,9 @@ export interface ChamadoRow {
   sla_vencimento: string | null;
   created_at: string;
   updated_at: string;
+  pausado_em: string | null;
+  motivo_pausa: string | null;
+  tempo_pausado_minutos: number;
 }
 
 export function useChamados(setor: Setor, scope: "mine" | "sector") {
@@ -138,6 +141,7 @@ export function StatsCards({ chamados }: { chamados?: ChamadoRow[] }) {
   const total = chamados?.length ?? 0;
   const abertos = chamados?.filter((c) => c.status === "aberto").length ?? 0;
   const andamento = chamados?.filter((c) => c.status === "em_andamento").length ?? 0;
+  const espera = chamados?.filter((c) => c.status === "em_espera").length ?? 0;
   const finalizados = chamados?.filter((c) => c.status === "finalizado").length ?? 0;
   const atrasados = chamados?.filter((c) => isSlaVencido(c.sla_vencimento, c.status)).length ?? 0;
 
@@ -145,12 +149,13 @@ export function StatsCards({ chamados }: { chamados?: ChamadoRow[] }) {
     { label: "Total", value: total, icon: Inbox, color: "text-primary" },
     { label: "Abertos", value: abertos, icon: Clock, color: "text-primary" },
     { label: "Em andamento", value: andamento, icon: Clock, color: "text-warning" },
+    { label: "Em espera", value: espera, icon: Clock, color: "text-muted-foreground" },
     { label: "Finalizados", value: finalizados, icon: CheckCircle2, color: "text-success" },
     { label: "SLA vencido", value: atrasados, icon: AlertTriangle, color: "text-destructive" },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
       {items.map((it) => {
         const Icon = it.icon;
         return (
