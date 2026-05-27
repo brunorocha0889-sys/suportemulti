@@ -140,15 +140,15 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
     doc.text(`Período: ${from} a ${to}${filterSetor !== "todos" ? ` • Setor: ${filterSetor}` : ""}`, 14, 23);
     autoTable(doc, {
       startY: 28,
-      head: [["OS", "Data", "Solicitante", "Setor", "Ramal", "Status", "Descrição"]],
+      head: [["OS", "Data", "Solicitante", "Setor", "Status", "Pausado (min)", "Motivo pausa"]],
       body: filtered.map((c) => [
         c.numero_os ?? "-",
         fmtDate(c.created_at),
         c.solicitante_nome,
         c.solicitante_setor,
-        c.solicitante_ramal ?? "-",
         statusLabel[c.status],
-        c.descricao.slice(0, 50),
+        String(c.tempo_pausado_minutos ?? 0),
+        (c.motivo_pausa ?? "").slice(0, 40),
       ]),
       styles: { fontSize: 8 },
     });
@@ -177,6 +177,8 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
       Ramal: c.solicitante_ramal ?? "",
       Status: statusLabel[c.status],
       Descrição: c.descricao,
+      "Tempo pausado (min)": c.tempo_pausado_minutos ?? 0,
+      "Motivo pausa": c.motivo_pausa ?? "",
       "SLA Vencimento": c.sla_vencimento ? fmtDate(c.sla_vencimento) : "",
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
