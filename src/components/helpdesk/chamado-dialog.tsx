@@ -168,9 +168,8 @@ export function ChamadoDialog({
                       <Label>Solução aplicada</Label>
                       <Textarea value={solucao} onChange={(e) => setSolucao(e.target.value)} rows={4} required />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Tempo gasto (minutos)</Label>
-                      <Input type="number" min={0} value={tempo} onChange={(e) => setTempo(Number(e.target.value))} />
+                    <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+                      Tempo de atendimento calculado automaticamente: <strong>{Math.max(0, Math.round((Date.now() - new Date(chamado.created_at).getTime()) / 60000))} min</strong>
                     </div>
                   </>
                 )}
