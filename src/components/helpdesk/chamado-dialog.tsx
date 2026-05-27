@@ -35,14 +35,12 @@ export function ChamadoDialog({
   const qc = useQueryClient();
   const [status, setStatus] = useState<ChamadoStatus>("aberto");
   const [solucao, setSolucao] = useState("");
-  const [tempo, setTempo] = useState<number>(0);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (chamado) {
       setStatus(chamado.status);
       setSolucao("");
-      setTempo(0);
     }
   }, [chamado]);
 
@@ -72,11 +70,15 @@ export function ChamadoDialog({
           setBusy(false);
           return;
         }
+        const tempoGastoMinutos = Math.max(
+          0,
+          Math.round((Date.now() - new Date(chamado.created_at).getTime()) / 60000)
+        );
         const { error: sErr } = await supabase.from("solucoes_chamados").insert({
           chamado_id: chamado.id,
           admin_id: user.id,
           descricao_solucao: solucao,
-          tempo_gasto_minutos: Number(tempo) || 0,
+          tempo_gasto_minutos: tempoGastoMinutos,
         });
         if (sErr) throw sErr;
       }
@@ -166,9 +168,8 @@ export function ChamadoDialog({
                       <Label>Solução aplicada</Label>
                       <Textarea value={solucao} onChange={(e) => setSolucao(e.target.value)} rows={4} required />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Tempo gasto (minutos)</Label>
-                      <Input type="number" min={0} value={tempo} onChange={(e) => setTempo(Number(e.target.value))} />
+                    <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+                      Tempo de atendimento calculado automaticamente: <strong>{Math.max(0, Math.round((Date.now() - new Date(chamado.created_at).getTime()) / 60000))} min</strong>
                     </div>
                   </>
                 )}
