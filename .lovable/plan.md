@@ -1,29 +1,51 @@
 ## Objetivo
-Ao finalizar um chamado, o sistema deve calcular o tempo gasto automaticamente (em minutos, a partir de `created_at` até o momento da finalização). O admin não precisa mais digitar o tempo.
+Permitir que admins pausem o tempo de atendimento de um chamado por falta de peça/equipamento, com motivo registrado, exibido em nova aba "Em espera" e contabilizado no relatório.
 
-## Alterações
+## Banco de dados
 
-### 1. `src/components/helpdesk/chamado-dialog.tsx`
-- Remover o campo de input "Tempo gasto (minutos)" e o estado `tempo`.
-- No `handleUpdate`, ao finalizar, calcular:
-  ```ts
-  const tempoGastoMinutos = Math.max(
-    0,
-    Math.round((Date.now() - new Date(chamado.created_at).getTime()) / 60000)
-  );
-  ```
-- Inserir esse valor em `solucoes_chamados.tempo_gasto_minutos`.
-- Exibir ao admin (antes de salvar) uma linha informativa do tipo "Tempo de atendimento: Xh Ym (calculado automaticamente)".
+Nova migration:
 
-### 2. SLA
-O cálculo de SLA já é automático:
-- Trigger `set_chamado_sla` define `sla_vencimento = created_at + horas_resolucao` na criação.
-- `isSlaVencido` em `src/lib/chamado-utils.ts` compara com `now()`.
-Nenhuma mudança necessária no SLA — apenas confirmar que continua funcionando.
+1. Adicionar status `em_espera` ao enum `chamado_status`.
+2. Adicionar colunas em `chamados`:
+   - `pausado_em` timestamptz nullable
+   - `motivo_pausa` text nullable
+   - `tempo_pausado_minutos` int default 0 (acumulado de pausas anteriores)
+3. Atualizar `statusLabel`/`statusColor` em `src/lib/chamado-utils.ts` para incluir `em_espera` (badge âmbar/cinza).
+4. Atualizar `isSlaVencido` para somar `tempo_pausado_minutos` + tempo pausado atual ao SLA (ou ignorar SLA enquanto em espera).
+5. Sem mudança nas policies (UPDATE já permitido a staff do setor).
 
-### 3. Sem mudanças de banco
-A coluna `tempo_gasto_minutos` continua sendo preenchida, apenas a origem do valor muda (calculada no cliente em vez de digitada). Nenhuma migration necessária.
+## Backend (cálculo de tempo)
 
-## Fora de escopo
-- Não mexer em RLS nem em outras telas.
-- Relatórios continuam usando `tempo_gasto_minutos` como hoje.
+No `ChamadoDialog.handleUpdate`, ao finalizar:
+- `tempoTotal = (now - created_at)/60000`
+- `tempoPausaAtual = pausado_em ? (now - pausado_em)/60000 : 0`
+- `tempo_gasto_minutos = max(0, round(tempoTotal - tempo_pausado_minutos - tempoPausaAtual))`
+
+## UI — ChamadoDialog (`src/components/helpdesk/chamado-dialog.tsx`)
+
+- Adicionar opção "Em espera" no Select de status (apenas para admin/staff).
+- Quando status = `em_espera`: mostrar Textarea obrigatório "Motivo / peça faltante" → salva em `motivo_pausa`, seta `pausado_em = now()`.
+- Ao mudar de `em_espera` → `aberto`/`em_andamento`: acumular `tempo_pausado_minutos += (now - pausado_em)`, limpar `pausado_em` e `motivo_pausa`.
+- Exibir banner quando chamado estiver `em_espera`: motivo + "Parado há X min/horas".
+- Atualizar cálculo do tempo informativo (descontar pausas).
+
+## UI — Lista e filtros
+
+- `src/routes/app.$setor.tsx`: adicionar opção "Em espera" no Select de filtro de status.
+- `src/components/helpdesk/chamado-shared.tsx` (StatsCards / ChamadosList): adicionar card/contagem "Em espera" e badge correspondente.
+
+## Relatórios (`src/components/helpdesk/relatorios.tsx`)
+
+- Nova métrica: total de chamados em espera.
+- Tabela/lista "Em espera": nº OS, solicitante, motivo, tempo parado.
+- Tempo médio de pausa entre chamados finalizados.
+- Tempo de atendimento já desconta pausas (vem direto de `tempo_gasto_minutos`).
+
+## Resumo
+
+```
+DB: + status em_espera, colunas pausado_em/motivo_pausa/tempo_pausado_minutos
+UI: nova opção no select + banner + filtro + aba/cartão "Em espera"
+SLA + tempo de atendimento descontam tempo pausado
+Relatórios exibem dados de pausa
+```
