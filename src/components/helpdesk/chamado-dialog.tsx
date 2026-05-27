@@ -70,11 +70,15 @@ export function ChamadoDialog({
           setBusy(false);
           return;
         }
+        const tempoGastoMinutos = Math.max(
+          0,
+          Math.round((Date.now() - new Date(chamado.created_at).getTime()) / 60000)
+        );
         const { error: sErr } = await supabase.from("solucoes_chamados").insert({
           chamado_id: chamado.id,
           admin_id: user.id,
           descricao_solucao: solucao,
-          tempo_gasto_minutos: Number(tempo) || 0,
+          tempo_gasto_minutos: tempoGastoMinutos,
         });
         if (sErr) throw sErr;
       }
