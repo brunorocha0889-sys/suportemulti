@@ -70,7 +70,12 @@ export function ChamadoDialog({
     if (!user) return;
     setBusy(true);
     try {
-      const update: Record<string, unknown> = { status };
+      const update: {
+        status: ChamadoStatus;
+        pausado_em?: string | null;
+        motivo_pausa?: string | null;
+        tempo_pausado_minutos?: number;
+      } = { status };
 
       // Transição para em_espera
       if (status === "em_espera" && chamado.status !== "em_espera") {
