@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
 } from "recharts";
-import { fmtDate, statusLabel, isSlaVencido, type ChamadoStatus } from "@/lib/chamado-utils";
-import { FileDown, FileSpreadsheet } from "lucide-react";
+import { fmtDate, fmtMinutes, statusLabel, isSlaVencido, tempoParado, type ChamadoStatus } from "@/lib/chamado-utils";
+import { FileDown, FileSpreadsheet, PauseCircle } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -21,6 +21,7 @@ interface Row {
   solicitante_nome: string; solicitante_setor: string;
   solicitante_ramal: string | null; descricao: string;
   status: ChamadoStatus; sla_vencimento: string | null; created_at: string;
+  pausado_em: string | null; motivo_pausa: string | null; tempo_pausado_minutos: number;
 }
 interface Solucao { chamado_id: string; tempo_gasto_minutos: number; data_resolucao: string }
 
@@ -79,12 +80,24 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
   );
 
   const byStatus = useMemo(() => {
-    const acc: Record<string, number> = { aberto: 0, em_andamento: 0, finalizado: 0, atrasado: 0 };
+    const acc: Record<string, number> = { aberto: 0, em_andamento: 0, em_espera: 0, finalizado: 0, atrasado: 0 };
     filtered.forEach((c) => {
       const eff = isSlaVencido(c.sla_vencimento, c.status) && c.status !== "finalizado" ? "atrasado" : c.status;
       acc[eff] = (acc[eff] ?? 0) + 1;
     });
     return Object.entries(acc).map(([k, v]) => ({ name: statusLabel[k as ChamadoStatus], value: v }));
+  }, [filtered]);
+
+  const emEspera = useMemo(
+    () => filtered.filter((c) => c.status === "em_espera"),
+    [filtered]
+  );
+
+  const tempoMedioPausa = useMemo(() => {
+    const comPausa = filtered.filter((c) => (c.tempo_pausado_minutos ?? 0) > 0);
+    if (!comPausa.length) return 0;
+    const tot = comPausa.reduce((s, c) => s + (c.tempo_pausado_minutos ?? 0), 0);
+    return Math.round(tot / comPausa.length);
   }, [filtered]);
 
   const byDay = useMemo(() => {
