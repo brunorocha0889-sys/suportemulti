@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PainelMestreRouteImport } from './routes/painel-mestre'
 import { Route as AcompanharRouteImport } from './routes/acompanhar'
 import { Route as AbrirRouteImport } from './routes/abrir'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthSetorRouteImport } from './routes/auth.$setor'
 import { Route as AppSetorRouteImport } from './routes/app.$setor'
 
+const PainelMestreRoute = PainelMestreRouteImport.update({
+  id: '/painel-mestre',
+  path: '/painel-mestre',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AcompanharRoute = AcompanharRouteImport.update({
   id: '/acompanhar',
   path: '/acompanhar',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/abrir': typeof AbrirRoute
   '/acompanhar': typeof AcompanharRoute
+  '/painel-mestre': typeof PainelMestreRoute
   '/app/$setor': typeof AppSetorRoute
   '/auth/$setor': typeof AuthSetorRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/abrir': typeof AbrirRoute
   '/acompanhar': typeof AcompanharRoute
+  '/painel-mestre': typeof PainelMestreRoute
   '/app/$setor': typeof AppSetorRoute
   '/auth/$setor': typeof AuthSetorRoute
 }
@@ -60,19 +68,33 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/abrir': typeof AbrirRoute
   '/acompanhar': typeof AcompanharRoute
+  '/painel-mestre': typeof PainelMestreRoute
   '/app/$setor': typeof AppSetorRoute
   '/auth/$setor': typeof AuthSetorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/abrir' | '/acompanhar' | '/app/$setor' | '/auth/$setor'
+  fullPaths:
+    | '/'
+    | '/abrir'
+    | '/acompanhar'
+    | '/painel-mestre'
+    | '/app/$setor'
+    | '/auth/$setor'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/abrir' | '/acompanhar' | '/app/$setor' | '/auth/$setor'
+  to:
+    | '/'
+    | '/abrir'
+    | '/acompanhar'
+    | '/painel-mestre'
+    | '/app/$setor'
+    | '/auth/$setor'
   id:
     | '__root__'
     | '/'
     | '/abrir'
     | '/acompanhar'
+    | '/painel-mestre'
     | '/app/$setor'
     | '/auth/$setor'
   fileRoutesById: FileRoutesById
@@ -81,12 +103,20 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AbrirRoute: typeof AbrirRoute
   AcompanharRoute: typeof AcompanharRoute
+  PainelMestreRoute: typeof PainelMestreRoute
   AppSetorRoute: typeof AppSetorRoute
   AuthSetorRoute: typeof AuthSetorRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/painel-mestre': {
+      id: '/painel-mestre'
+      path: '/painel-mestre'
+      fullPath: '/painel-mestre'
+      preLoaderRoute: typeof PainelMestreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/acompanhar': {
       id: '/acompanhar'
       path: '/acompanhar'
@@ -129,19 +159,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AbrirRoute: AbrirRoute,
   AcompanharRoute: AcompanharRoute,
+  PainelMestreRoute: PainelMestreRoute,
   AppSetorRoute: AppSetorRoute,
   AuthSetorRoute: AuthSetorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

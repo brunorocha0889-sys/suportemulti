@@ -1,15 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Send, Search, LogIn, FileText } from "lucide-react";
+import { Send, Search, LogIn, FileText, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSetoresReceptores, corStyleSetor } from "@/lib/setores-receptores";
 
 export const Route = createFileRoute("/")({ component: Index });
 
 function Index() {
   const navigate = useNavigate();
   const [os, setOs] = useState("");
+  const { data: setores } = useSetoresReceptores();
 
   const acompanhar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,6 +19,8 @@ function Index() {
     if (!v) return;
     navigate({ to: "/acompanhar", search: { os: v } });
   };
+
+  const nomesSetores = (setores ?? []).map((s) => s.nome).join(" / ") || "diversos setores";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/40">
@@ -39,7 +43,7 @@ function Index() {
               </div>
               <CardTitle>Abrir Chamado</CardTitle>
               <CardDescription>
-                Registre uma nova solicitação para Patrimônio ou Climatização. Sem necessidade de login.
+                Registre uma nova solicitação para {nomesSetores}. Sem necessidade de login.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -80,18 +84,27 @@ function Index() {
           </Card>
         </div>
 
-        <footer className="mt-12 flex flex-col sm:flex-row gap-3 items-center justify-center text-sm">
-          <span className="text-muted-foreground">Equipe interna:</span>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/auth/$setor" params={{ setor: "patrimonio" }}>
-              <LogIn className="size-4 mr-2" /> Patrimônio
-            </Link>
-          </Button>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/auth/$setor" params={{ setor: "refrigeracao" }}>
-              <LogIn className="size-4 mr-2" /> Climatização
-            </Link>
-          </Button>
+        <footer className="mt-12 flex flex-col gap-4 items-center justify-center text-sm">
+          <div className="flex flex-wrap gap-2 items-center justify-center">
+            <span className="text-muted-foreground">Equipe interna:</span>
+            {(setores ?? []).map((s) => (
+              <Button asChild key={s.slug} variant="ghost" size="sm">
+                <Link to="/auth/$setor" params={{ setor: s.slug }}>
+                  <span
+                    className="inline-block size-2.5 rounded-full mr-2"
+                    style={{ backgroundColor: s.cor_hex }}
+                  />
+                  <LogIn className="size-4 mr-1.5" /> {s.nome}
+                </Link>
+              </Button>
+            ))}
+          </div>
+          <Link
+            to="/painel-mestre"
+            className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
+          >
+            <ShieldCheck className="size-3" /> Painel mestre
+          </Link>
         </footer>
       </div>
     </div>

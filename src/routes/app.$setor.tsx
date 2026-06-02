@@ -1,12 +1,13 @@
-import { createFileRoute, redirect, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useAuth, setorLabel, type Setor } from "@/lib/auth-context";
+import { useAuth } from "@/lib/auth-context";
+import { useSetorReceptor, corStyleSetor, nomeSetor } from "@/lib/setores-receptores";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Package, Snowflake, Plus, ListChecks, BarChart3, Users, Settings, Loader2, Building2 } from "lucide-react";
+import { LogOut, Plus, ListChecks, BarChart3, Users, Settings, Loader2, Building2, Layers } from "lucide-react";
 import { useChamados, ChamadosList, StatsCards, type ChamadoRow } from "@/components/helpdesk/chamado-shared";
 import { NovoChamadoForm } from "@/components/helpdesk/novo-chamado";
 import { ChamadoDialog } from "@/components/helpdesk/chamado-dialog";
@@ -15,18 +16,14 @@ import { SetoresTab } from "@/components/helpdesk/setores-tab";
 import { RelatoriosTab } from "@/components/helpdesk/relatorios";
 import { isSlaVencido, type ChamadoStatus } from "@/lib/chamado-utils";
 
-const VALID: Setor[] = ["patrimonio", "refrigeracao"];
-
 export const Route = createFileRoute("/app/$setor")({
-  beforeLoad: ({ params }) => {
-    if (!VALID.includes(params.setor as Setor)) throw redirect({ to: "/" });
-  },
   component: AppPage,
 });
 
 function AppPage() {
-  const { setor } = Route.useParams() as { setor: Setor };
+  const { setor } = Route.useParams();
   const { session, perfil, loading, signOut } = useAuth();
+  const { data: receptor, isLoading: loadingSetor } = useSetorReceptor(setor);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,6 +35,12 @@ function AppPage() {
       navigate({ to: "/" });
     }
   }, [perfil, setor, navigate]);
+
+  useEffect(() => {
+    if (!loadingSetor && receptor === null) {
+      navigate({ to: "/" });
+    }
+  }, [loadingSetor, receptor, navigate]);
 
   if (loading || !session || !perfil) {
     return (
@@ -61,19 +64,18 @@ function AppPage() {
 
   const isStaff = perfil.role === "admin" || perfil.role === "secundario";
   const isAdmin = perfil.role === "admin";
-  const accent = setor === "patrimonio" ? "bg-patrimonio text-patrimonio-foreground" : "bg-refrigeracao text-refrigeracao-foreground";
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <Link to="/" className={`size-10 rounded-lg ${accent} grid place-items-center`}>
-              {setor === "patrimonio" ? <Package className="size-5" /> : <Snowflake className="size-5" />}
+            <Link to="/" className="size-10 rounded-lg grid place-items-center" style={corStyleSetor(receptor)}>
+              <Layers className="size-5" />
             </Link>
             <div>
               <p className="text-xs text-muted-foreground leading-none">HelpDesk</p>
-              <h1 className="font-semibold leading-tight">{setorLabel(setor)}</h1>
+              <h1 className="font-semibold leading-tight">{nomeSetor(setor, receptor)}</h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -99,7 +101,7 @@ function AppPage() {
   );
 }
 
-function UserView({ setor }: { setor: Setor }) {
+function UserView({ setor }: { setor: string }) {
   const { data, isLoading } = useChamados(setor, "mine");
   const [selected, setSelected] = useState<ChamadoRow | null>(null);
   return (
@@ -120,7 +122,7 @@ function UserView({ setor }: { setor: Setor }) {
   );
 }
 
-function StaffView({ setor, isAdmin }: { setor: Setor; isAdmin: boolean }) {
+function StaffView({ setor, isAdmin }: { setor: string; isAdmin: boolean }) {
   const { data, isLoading } = useChamados(setor, "sector");
   const [selected, setSelected] = useState<ChamadoRow | null>(null);
   const [search, setSearch] = useState("");

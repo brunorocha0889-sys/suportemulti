@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Setor } from "@/lib/auth-context";
+import { useSetorReceptor, nomeSetor } from "@/lib/setores-receptores";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,8 @@ interface Solucao { chamado_id: string; tempo_gasto_minutos: number; data_resolu
 const COLORS = ["oklch(0.5 0.18 255)", "oklch(0.75 0.16 70)", "oklch(0.65 0.16 150)", "oklch(0.58 0.22 27)", "oklch(0.6 0.2 320)", "oklch(0.7 0.18 200)"];
 
 export function RelatoriosTab({ setor }: { setor: Setor }) {
+  const { data: receptor } = useSetorReceptor(setor);
+  const nomeDoSetor = nomeSetor(setor, receptor);
   const today = new Date();
   const monthAgo = new Date(today.getTime() - 30 * 86400000);
   const [from, setFrom] = useState(monthAgo.toISOString().slice(0, 10));
@@ -135,7 +138,7 @@ export function RelatoriosTab({ setor }: { setor: Setor }) {
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(14);
-    doc.text(`Relatório de Chamados — ${setor === "patrimonio" ? "Patrimônio" : "Climatização"}`, 14, 16);
+    doc.text(`Relatório de Chamados — ${nomeDoSetor}`, 14, 16);
     doc.setFontSize(10);
     doc.text(`Período: ${from} a ${to}${filterSetor !== "todos" ? ` • Setor: ${filterSetor}` : ""}`, 14, 23);
     autoTable(doc, {
