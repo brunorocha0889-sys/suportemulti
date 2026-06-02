@@ -22,7 +22,7 @@ export type Database = {
           motivo_pausa: string | null
           numero_os: string | null
           pausado_em: string | null
-          setor_destino: Database["public"]["Enums"]["setor_tipo"]
+          setor_destino: string
           sla_vencimento: string | null
           solicitante_nome: string
           solicitante_ramal: string | null
@@ -39,7 +39,7 @@ export type Database = {
           motivo_pausa?: string | null
           numero_os?: string | null
           pausado_em?: string | null
-          setor_destino: Database["public"]["Enums"]["setor_tipo"]
+          setor_destino: string
           sla_vencimento?: string | null
           solicitante_nome: string
           solicitante_ramal?: string | null
@@ -56,7 +56,7 @@ export type Database = {
           motivo_pausa?: string | null
           numero_os?: string | null
           pausado_em?: string | null
-          setor_destino?: Database["public"]["Enums"]["setor_tipo"]
+          setor_destino?: string
           sla_vencimento?: string | null
           solicitante_nome?: string
           solicitante_ramal?: string | null
@@ -66,7 +66,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chamados_setor_fk"
+            columns: ["setor_destino"]
+            isOneToOne: false
+            referencedRelation: "setores_receptores"
+            referencedColumns: ["slug"]
+          },
+        ]
       }
       os_counter: {
         Row: {
@@ -91,7 +99,7 @@ export type Database = {
           full_name: string
           id: string
           role: Database["public"]["Enums"]["user_role"]
-          setor: Database["public"]["Enums"]["setor_tipo"]
+          setor: string
         }
         Insert: {
           ativo?: boolean
@@ -100,7 +108,7 @@ export type Database = {
           full_name: string
           id: string
           role?: Database["public"]["Enums"]["user_role"]
-          setor: Database["public"]["Enums"]["setor_tipo"]
+          setor: string
         }
         Update: {
           ativo?: boolean
@@ -109,7 +117,42 @@ export type Database = {
           full_name?: string
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
-          setor?: Database["public"]["Enums"]["setor_tipo"]
+          setor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perfis_setor_fk"
+            columns: ["setor"]
+            isOneToOne: false
+            referencedRelation: "setores_receptores"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      setores_receptores: {
+        Row: {
+          ativo: boolean
+          cor_fg_hex: string
+          cor_hex: string
+          created_at: string
+          nome: string
+          slug: string
+        }
+        Insert: {
+          ativo?: boolean
+          cor_fg_hex?: string
+          cor_hex?: string
+          created_at?: string
+          nome: string
+          slug: string
+        }
+        Update: {
+          ativo?: boolean
+          cor_fg_hex?: string
+          cor_hex?: string
+          created_at?: string
+          nome?: string
+          slug?: string
         }
         Relationships: []
       }
@@ -119,7 +162,7 @@ export type Database = {
           created_at: string
           id: string
           nome: string
-          setor_destino: Database["public"]["Enums"]["setor_tipo"]
+          setor_destino: string
           updated_at: string
         }
         Insert: {
@@ -127,7 +170,7 @@ export type Database = {
           created_at?: string
           id?: string
           nome: string
-          setor_destino: Database["public"]["Enums"]["setor_tipo"]
+          setor_destino: string
           updated_at?: string
         }
         Update: {
@@ -135,31 +178,47 @@ export type Database = {
           created_at?: string
           id?: string
           nome?: string
-          setor_destino?: Database["public"]["Enums"]["setor_tipo"]
+          setor_destino?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "setores_solicitantes_setor_fk"
+            columns: ["setor_destino"]
+            isOneToOne: false
+            referencedRelation: "setores_receptores"
+            referencedColumns: ["slug"]
+          },
+        ]
       }
       sla_config: {
         Row: {
           horas_resolucao: number
           horas_resposta: number
-          setor: Database["public"]["Enums"]["setor_tipo"]
+          setor: string
           updated_at: string
         }
         Insert: {
           horas_resolucao?: number
           horas_resposta?: number
-          setor: Database["public"]["Enums"]["setor_tipo"]
+          setor: string
           updated_at?: string
         }
         Update: {
           horas_resolucao?: number
           horas_resposta?: number
-          setor?: Database["public"]["Enums"]["setor_tipo"]
+          setor?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sla_config_setor_fk"
+            columns: ["setor"]
+            isOneToOne: true
+            referencedRelation: "setores_receptores"
+            referencedColumns: ["slug"]
+          },
+        ]
       }
       solucoes_chamados: {
         Row: {
@@ -208,7 +267,7 @@ export type Database = {
           data_resolucao: string
           descricao: string
           numero_os: string
-          setor_destino: Database["public"]["Enums"]["setor_tipo"]
+          setor_destino: string
           sla_vencimento: string
           solicitante_nome: string
           solicitante_setor: string
@@ -221,10 +280,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
-      get_user_setor: {
-        Args: { _user_id: string }
-        Returns: Database["public"]["Enums"]["setor_tipo"]
-      }
+      get_user_setor: { Args: { _user_id: string }; Returns: string }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
@@ -235,7 +291,6 @@ export type Database = {
         | "finalizado"
         | "atrasado"
         | "em_espera"
-      setor_tipo: "patrimonio" | "refrigeracao"
       user_role: "admin" | "secundario" | "usuario"
     }
     CompositeTypes: {
@@ -371,7 +426,6 @@ export const Constants = {
         "atrasado",
         "em_espera",
       ],
-      setor_tipo: ["patrimonio", "refrigeracao"],
       user_role: ["admin", "secundario", "usuario"],
     },
   },
