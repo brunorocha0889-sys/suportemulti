@@ -42,7 +42,7 @@ function PainelMestre() {
   const refresh = async (s: string) => {
     try {
       const r = await listar({ data: { senha: s } });
-      setSetores(r.setores as SetorRow[]);
+      setSetores(r.setores as unknown as SetorRow[]);
     } catch (e: any) {
       toast.error(e.message ?? "Falha ao listar setores.");
     }
