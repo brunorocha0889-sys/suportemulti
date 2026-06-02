@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { setorLabel, type Setor } from "@/lib/auth-context";
+import { useSetoresReceptores, useSetorReceptor, corStyleSetor, nomeSetor } from "@/lib/setores-receptores";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, Copy, Loader2, Package, Send, Snowflake } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, Layers, Loader2, Send } from "lucide-react";
 
 export const Route = createFileRoute("/abrir")({ component: AbrirPage });
 
 function AbrirPage() {
-  const [setor, setSetor] = useState<Setor | null>(null);
+  const [setor, setSetor] = useState<string | null>(null);
+  const { data: setores, isLoading } = useSetoresReceptores();
 
   return (
     <div className="min-h-screen px-4 py-10 bg-gradient-to-br from-background to-accent/40">
@@ -31,8 +32,17 @@ function AbrirPage() {
               <CardDescription>Selecione a área responsável pela sua solicitação.</CardDescription>
             </CardHeader>
             <CardContent className="grid sm:grid-cols-2 gap-4">
-              <SetorPick s="patrimonio" onClick={() => setSetor("patrimonio")} />
-              <SetorPick s="refrigeracao" onClick={() => setSetor("refrigeracao")} />
+              {isLoading ? (
+                <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              ) : !setores?.length ? (
+                <p className="text-sm text-muted-foreground col-span-full">
+                  Nenhum setor disponível no momento.
+                </p>
+              ) : (
+                setores.map((s) => (
+                  <SetorPick key={s.slug} setor={s} onClick={() => setSetor(s.slug)} />
+                ))
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -43,26 +53,26 @@ function AbrirPage() {
   );
 }
 
-function SetorPick({ s, onClick }: { s: Setor; onClick: () => void }) {
-  const bg = s === "patrimonio" ? "bg-patrimonio text-patrimonio-foreground" : "bg-refrigeracao text-refrigeracao-foreground";
+function SetorPick({ setor, onClick }: { setor: { slug: string; nome: string; cor_hex: string; cor_fg_hex: string }; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
       className="rounded-xl border-2 p-6 text-left hover:shadow-md transition-all hover:border-primary/40"
     >
-      <div className={`size-14 rounded-lg ${bg} grid place-items-center mb-3`}>
-        {s === "patrimonio" ? <Package className="size-7" /> : <Snowflake className="size-7" />}
+      <div
+        className="size-14 rounded-lg grid place-items-center mb-3"
+        style={{ backgroundColor: setor.cor_hex, color: setor.cor_fg_hex }}
+      >
+        <Layers className="size-7" />
       </div>
-      <h3 className="text-lg font-semibold">{setorLabel(s)}</h3>
-      <p className="text-sm text-muted-foreground mt-1">
-        {s === "patrimonio" ? "Bens, mobiliário, manutenção patrimonial." : "Equipamentos de refrigeração."}
-      </p>
+      <h3 className="text-lg font-semibold">{setor.nome}</h3>
+      <p className="text-sm text-muted-foreground mt-1">Abrir chamado para {setor.nome}.</p>
     </button>
   );
 }
 
-function ChamadoForm({ setor, onBack }: { setor: Setor; onBack: () => void }) {
-  const accent = setor === "patrimonio" ? "bg-patrimonio text-patrimonio-foreground" : "bg-refrigeracao text-refrigeracao-foreground";
+function ChamadoForm({ setor, onBack }: { setor: string; onBack: () => void }) {
+  const { data: receptor } = useSetorReceptor(setor);
   const [nome, setNome] = useState("");
   const [solicitanteSetor, setSolicitanteSetor] = useState("");
   const [ramal, setRamal] = useState("");
@@ -159,11 +169,11 @@ function ChamadoForm({ setor, onBack }: { setor: Setor; onBack: () => void }) {
           </Button>
         </div>
         <div className="flex items-center gap-3">
-          <div className={`size-12 rounded-lg ${accent} grid place-items-center`}>
-            {setor === "patrimonio" ? <Package className="size-6" /> : <Snowflake className="size-6" />}
+          <div className="size-12 rounded-lg grid place-items-center" style={corStyleSetor(receptor)}>
+            <Layers className="size-6" />
           </div>
           <div>
-            <CardTitle className="text-xl">Chamado para {setorLabel(setor)}</CardTitle>
+            <CardTitle className="text-xl">Chamado para {nomeSetor(setor, receptor)}</CardTitle>
             <CardDescription>Preencha os dados abaixo para abrir a solicitação.</CardDescription>
           </div>
         </div>
