@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Setor = "patrimonio" | "refrigeracao";
+// Setor agora é qualquer string (slug definido em setores_receptores)
+export type Setor = string;
 export type Role = "admin" | "secundario" | "usuario";
 
 export interface Perfil {
@@ -78,4 +79,6 @@ export function useAuth() {
   return c;
 }
 
-export const setorLabel = (s: Setor) => (s === "patrimonio" ? "Patrimônio" : "Climatização");
+/** Fallback humanizado quando ainda não temos o nome real do setor. */
+export const setorLabel = (s: Setor) =>
+  s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, " ") : "";
