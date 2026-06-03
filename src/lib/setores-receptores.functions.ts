@@ -229,7 +229,7 @@ export const redefinirSenhaAdmin = createServerFn({ method: "POST" })
     z.object({
       senha: z.string().min(1).max(200),
       userId: z.string().uuid(),
-      novaSenha: z.string().min(8).max(200),
+      novaSenha: z.string().min(6).max(200),
     }).parse(d),
   )
   .handler(async ({ data }) => {
