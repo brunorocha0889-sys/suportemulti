@@ -298,9 +298,12 @@ function ListaSetoresCard({
                   <p className={`font-medium ${!s.ativo ? "text-muted-foreground line-through" : ""}`}>{s.nome}</p>
                   <p className="text-xs text-muted-foreground font-mono truncate">/{s.slug}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">Ativo</Label>
-                  <Switch checked={s.ativo} onCheckedChange={() => toggle(s)} />
+                <div className="flex items-center gap-3">
+                  <GerenciarAdminsButton senha={senha} slug={s.slug} nome={s.nome} />
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs">Ativo</Label>
+                    <Switch checked={s.ativo} onCheckedChange={() => toggle(s)} />
+                  </div>
                 </div>
               </div>
             ))}
