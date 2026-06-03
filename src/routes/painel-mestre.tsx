@@ -366,7 +366,7 @@ function GerenciarAdminsButton({ senha, slug, nome }: { senha: string; slug: str
   };
 
   const submitReset = async (userId: string) => {
-    if (resetPwd.length < 8) return toast.error("Senha deve ter ao menos 8 caracteres.");
+    if (resetPwd.length < 6) return toast.error("Senha deve ter ao menos 6 caracteres.");
     setBusyReset(true);
     try {
       await redefinir({ data: { senha, userId, novaSenha: resetPwd } });
