@@ -23,7 +23,19 @@ function Index() {
   const nomesSetores = (setores ?? []).map((s) => s.nome).join(" / ") || "diversos setores";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/40">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/40 relative">
+      <Button
+        asChild
+        variant="outline"
+        size="icon"
+        className="fixed top-4 right-4 z-50 shadow-md"
+        title="Painel mestre"
+      >
+        <Link to="/painel-mestre" aria-label="Painel mestre">
+          <ShieldCheck className="size-5" />
+        </Link>
+      </Button>
+
       <div className="mx-auto max-w-4xl px-6 py-16">
         <header className="text-center mb-12">
           <p className="text-sm font-medium text-muted-foreground tracking-widest uppercase mb-3">
