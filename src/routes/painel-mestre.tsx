@@ -313,3 +313,159 @@ function ListaSetoresCard({
     </Card>
   );
 }
+
+interface AdminRow { id: string; full_name: string; email: string; ativo: boolean }
+
+function GerenciarAdminsButton({ senha, slug, nome }: { senha: string; slug: string; nome: string }) {
+  const [open, setOpen] = useState(false);
+  const [admins, setAdmins] = useState<AdminRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
+  const [newNome, setNewNome] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [busyCreate, setBusyCreate] = useState(false);
+  const [resetFor, setResetFor] = useState<string | null>(null);
+  const [resetPwd, setResetPwd] = useState("");
+  const [busyReset, setBusyReset] = useState(false);
+
+  const listar = useServerFn(listarAdminsSetor);
+  const criar = useServerFn(criarAdminSetor);
+  const redefinir = useServerFn(redefinirSenhaAdmin);
+
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const r = await listar({ data: { senha, slug } });
+      setAdmins(r.admins as AdminRow[]);
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha ao listar admins.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) refresh();
+  }, [open]);
+
+  const submitNovo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPwd.length < 8) return toast.error("Senha deve ter ao menos 8 caracteres.");
+    setBusyCreate(true);
+    try {
+      await criar({ data: { senha, slug, email: newEmail.trim(), password: newPwd, full_name: newNome.trim() } });
+      toast.success("Admin criado.");
+      setNewNome(""); setNewEmail(""); setNewPwd(""); setNewOpen(false);
+      refresh();
+    } catch (err: any) {
+      toast.error(err.message ?? "Falha ao criar admin.");
+    } finally {
+      setBusyCreate(false);
+    }
+  };
+
+  const submitReset = async (userId: string) => {
+    if (resetPwd.length < 8) return toast.error("Senha deve ter ao menos 8 caracteres.");
+    setBusyReset(true);
+    try {
+      await redefinir({ data: { senha, userId, novaSenha: resetPwd } });
+      toast.success("Senha redefinida.");
+      setResetFor(null); setResetPwd("");
+    } catch (err: any) {
+      toast.error(err.message ?? "Falha ao redefinir senha.");
+    } finally {
+      setBusyReset(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <Users className="size-4 mr-2" /> Admins
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Administradores · {nome}</DialogTitle>
+          <DialogDescription>
+            Crie novas contas admin ou redefina a senha das contas existentes deste setor.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="rounded-lg border divide-y">
+            {loading ? (
+              <div className="p-4 flex items-center justify-center text-sm text-muted-foreground">
+                <Loader2 className="size-4 mr-2 animate-spin" /> Carregando…
+              </div>
+            ) : admins.length === 0 ? (
+              <p className="p-4 text-sm text-muted-foreground">Nenhum admin cadastrado.</p>
+            ) : (
+              admins.map((a) => (
+                <div key={a.id} className="p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{a.full_name}</p>
+                      <p className="text-xs text-muted-foreground font-mono truncate">{a.email}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => { setResetFor(resetFor === a.id ? null : a.id); setResetPwd(""); }}
+                    >
+                      <KeyRound className="size-4 mr-2" />
+                      {resetFor === a.id ? "Cancelar" : "Redefinir senha"}
+                    </Button>
+                  </div>
+                  {resetFor === a.id && (
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        placeholder="Nova senha (mín. 8)"
+                        value={resetPwd}
+                        onChange={(e) => setResetPwd(e.target.value)}
+                      />
+                      <Button size="sm" disabled={busyReset} onClick={() => submitReset(a.id)}>
+                        {busyReset ? <Loader2 className="size-4 animate-spin" /> : "Salvar"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {!newOpen ? (
+            <Button variant="outline" onClick={() => setNewOpen(true)} className="w-full">
+              <Plus className="size-4 mr-2" /> Novo admin
+            </Button>
+          ) : (
+            <form onSubmit={submitNovo} className="space-y-3 rounded-lg border p-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Nome</Label>
+                <Input value={newNome} onChange={(e) => setNewNome(e.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">E-mail</Label>
+                <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Senha (mín. 8)</Label>
+                <Input type="password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} required />
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={busyCreate}>
+                  {busyCreate ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Plus className="size-4 mr-2" />}
+                  Criar admin
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setNewOpen(false)}>Cancelar</Button>
+              </div>
+            </form>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
