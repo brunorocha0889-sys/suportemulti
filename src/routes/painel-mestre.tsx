@@ -1,19 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   verificarSenhaMestra,
   criarSetorReceptor,
   listarSetoresReceptoresAdmin,
   alternarSetorReceptor,
+  listarAdminsSetor,
+  criarAdminSetor,
+  redefinirSenhaAdmin,
 } from "@/lib/setores-receptores.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Plus, ShieldCheck, KeyRound } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, ShieldCheck, KeyRound, Users } from "lucide-react";
 
 export const Route = createFileRoute("/painel-mestre")({ component: PainelMestre });
 
