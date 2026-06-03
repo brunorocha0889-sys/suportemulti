@@ -145,3 +145,112 @@ export const alternarSetorReceptor = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Lista admins de um setor. */
+export const listarAdminsSetor = createServerFn({ method: "POST" })
+  .inputValidator((d: { senha: string; slug: string }) =>
+    z.object({
+      senha: z.string().min(1).max(200),
+      slug: z.string().min(1).max(40),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    checkPassword(data.senha);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("perfis")
+      .select("id, full_name, email, ativo")
+      .eq("setor", data.slug)
+      .eq("role", "admin")
+      .order("full_name");
+    if (error) throw new Error(error.message);
+    return { admins: rows ?? [] };
+  });
+
+/** Cria um novo admin para um setor. */
+export const criarAdminSetor = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    senha: string;
+    slug: string;
+    email: string;
+    password: string;
+    full_name: string;
+  }) =>
+    z.object({
+      senha: z.string().min(1).max(200),
+      slug: z.string().min(1).max(40),
+      email: z.string().trim().email().max(255),
+      password: z.string().min(8).max(200),
+      full_name: z.string().trim().min(2).max(120),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    checkPassword(data.senha);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Verifica setor
+    const { data: setor, error: sErr } = await supabaseAdmin
+      .from("setores_receptores" as any)
+      .select("slug")
+      .eq("slug", data.slug)
+      .maybeSingle();
+    if (sErr) throw new Error(sErr.message);
+    if (!setor) throw new Error("Setor não encontrado.");
+
+    const { data: created, error: userErr } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { full_name: data.full_name, setor: data.slug },
+    });
+    if (userErr) throw new Error(userErr.message);
+    if (!created.user) throw new Error("Falha ao criar usuário.");
+
+    const { error: pErr } = await supabaseAdmin.from("perfis").insert({
+      id: created.user.id,
+      full_name: data.full_name,
+      email: data.email,
+      setor: data.slug,
+      role: "admin",
+      ativo: true,
+    });
+    if (pErr) {
+      // rollback do auth para não deixar usuário órfão
+      await supabaseAdmin.auth.admin.deleteUser(created.user.id).catch(() => {});
+      throw new Error(pErr.message);
+    }
+
+    return { id: created.user.id, email: data.email };
+  });
+
+/** Redefine a senha de um admin. */
+export const redefinirSenhaAdmin = createServerFn({ method: "POST" })
+  .inputValidator((d: { senha: string; userId: string; novaSenha: string }) =>
+    z.object({
+      senha: z.string().min(1).max(200),
+      userId: z.string().uuid(),
+      novaSenha: z.string().min(8).max(200),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    checkPassword(data.senha);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Só permite alterar senha de quem é admin
+    const { data: perfil, error: pErr } = await supabaseAdmin
+      .from("perfis")
+      .select("id, role")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (pErr) throw new Error(pErr.message);
+    if (!perfil) throw new Error("Perfil não encontrado.");
+    if (perfil.role !== "admin") {
+      throw new Error("Esta operação só é permitida para contas admin.");
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: data.novaSenha,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
