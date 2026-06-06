@@ -305,6 +305,7 @@ function ListaSetoresCard({
                     <Label className="text-xs">Ativo</Label>
                     <Switch checked={s.ativo} onCheckedChange={() => toggle(s)} />
                   </div>
+                  <ExcluirSetorButton senha={senha} slug={s.slug} nome={s.nome} onDeleted={onChanged} />
                 </div>
               </div>
             ))}
