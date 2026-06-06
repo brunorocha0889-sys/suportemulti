@@ -254,3 +254,61 @@ export const redefinirSenhaAdmin = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Exclui um setor receptor e TODOS os dados relacionados (chamados, perfis, SLA, etc). */
+export const excluirSetorReceptor = createServerFn({ method: "POST" })
+  .inputValidator((d: { senha: string; slug: string; confirmacao: string }) =>
+    z.object({
+      senha: z.string().min(1).max(200),
+      slug: z.string().min(1).max(40),
+      confirmacao: z.string().min(1).max(40),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    checkPassword(data.senha);
+    if (data.confirmacao !== data.slug) {
+      throw new Error("Confirmação não corresponde ao identificador do setor.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Verifica setor
+    const { data: setor, error: sErr } = await supabaseAdmin
+      .from("setores_receptores" as any)
+      .select("slug")
+      .eq("slug", data.slug)
+      .maybeSingle();
+    if (sErr) throw new Error(sErr.message);
+    if (!setor) throw new Error("Setor não encontrado.");
+
+    // Soluções dos chamados desse setor
+    const { data: chamados } = await supabaseAdmin
+      .from("chamados")
+      .select("id")
+      .eq("setor_destino", data.slug);
+    const chamadoIds = (chamados ?? []).map((c: any) => c.id);
+    if (chamadoIds.length > 0) {
+      await supabaseAdmin.from("solucoes_chamados").delete().in("chamado_id", chamadoIds);
+    }
+    await supabaseAdmin.from("chamados").delete().eq("setor_destino", data.slug);
+    await supabaseAdmin.from("setores_solicitantes" as any).delete().eq("setor_destino", data.slug);
+    await supabaseAdmin.from("sla_config" as any).delete().eq("setor", data.slug);
+
+    // Usuários do setor
+    const { data: perfis } = await supabaseAdmin
+      .from("perfis")
+      .select("id")
+      .eq("setor", data.slug);
+    const userIds = (perfis ?? []).map((p: any) => p.id);
+    await supabaseAdmin.from("perfis").delete().eq("setor", data.slug);
+    for (const uid of userIds) {
+      await supabaseAdmin.auth.admin.deleteUser(uid).catch(() => {});
+    }
+
+    const { error: delErr } = await supabaseAdmin
+      .from("setores_receptores" as any)
+      .delete()
+      .eq("slug", data.slug);
+    if (delErr) throw new Error(delErr.message);
+
+    return { ok: true };
+  });
