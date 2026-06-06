@@ -9,6 +9,7 @@ import {
   listarAdminsSetor,
   criarAdminSetor,
   redefinirSenhaAdmin,
+  excluirSetorReceptor,
 } from "@/lib/setores-receptores.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Plus, ShieldCheck, KeyRound, Users } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, ShieldCheck, KeyRound, Users, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/painel-mestre")({ component: PainelMestre });
 
