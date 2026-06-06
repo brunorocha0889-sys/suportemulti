@@ -471,3 +471,59 @@ function GerenciarAdminsButton({ senha, slug, nome }: { senha: string; slug: str
     </Dialog>
   );
 }
+
+function ExcluirSetorButton({ senha, slug, nome, onDeleted }: { senha: string; slug: string; nome: string; onDeleted: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const excluir = useServerFn(excluirSetorReceptor);
+
+  const submit = async () => {
+    if (confirm !== slug) return toast.error(`Digite "${slug}" para confirmar.`);
+    setBusy(true);
+    try {
+      await excluir({ data: { senha, slug, confirmacao: confirm } });
+      toast.success(`Setor "${nome}" excluído.`);
+      setOpen(false); setConfirm("");
+      onDeleted();
+    } catch (err: any) {
+      toast.error(err.message ?? "Falha ao excluir.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setConfirm(""); }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+          <Trash2 className="size-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Excluir setor "{nome}"?</DialogTitle>
+          <DialogDescription>
+            Esta ação é <strong>permanente</strong> e remove:
+            <ul className="list-disc ml-5 mt-2 space-y-0.5">
+              <li>Todos os chamados e soluções deste setor</li>
+              <li>Todos os usuários (admins e demais) deste setor</li>
+              <li>Configurações de SLA e setores solicitantes</li>
+            </ul>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Label className="text-xs">Para confirmar, digite o identificador <code className="font-mono">{slug}</code>:</Label>
+          <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder={slug} autoFocus />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button variant="destructive" disabled={busy || confirm !== slug} onClick={submit}>
+            {busy ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Trash2 className="size-4 mr-2" />}
+            Excluir permanentemente
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
