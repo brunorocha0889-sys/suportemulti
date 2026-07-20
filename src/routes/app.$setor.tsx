@@ -15,6 +15,7 @@ import { UsuariosTab, SlaConfigTab } from "@/components/helpdesk/admin-tabs";
 import { SetoresTab } from "@/components/helpdesk/setores-tab";
 import { RelatoriosTab } from "@/components/helpdesk/relatorios";
 import { isSlaVencido, type ChamadoStatus } from "@/lib/chamado-utils";
+import { useNovoChamadoNotification } from "@/hooks/use-novo-chamado-notification";
 
 export const Route = createFileRoute("/app/$setor")({
   component: AppPage,
@@ -25,6 +26,8 @@ function AppPage() {
   const { session, perfil, loading, signOut } = useAuth();
   const { data: receptor, isLoading: loadingSetor } = useSetorReceptor(setor);
   const navigate = useNavigate();
+  const isStaffPerfil = perfil?.role === "admin" || perfil?.role === "secundario";
+  useNovoChamadoNotification(isStaffPerfil && perfil?.setor === setor ? setor : undefined);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth/$setor", params: { setor } });
