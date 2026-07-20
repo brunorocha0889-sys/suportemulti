@@ -1,17 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Send, Search, LogIn, FileText, ShieldCheck } from "lucide-react";
+import { Send, Search, LogIn, FileText, ShieldCheck, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSetoresReceptores, corStyleSetor } from "@/lib/setores-receptores";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSetoresReceptores } from "@/lib/setores-receptores";
+import { useHospitalSelecionado } from "@/lib/hospitais";
 
 export const Route = createFileRoute("/")({ component: Index });
 
 function Index() {
   const navigate = useNavigate();
   const [os, setOs] = useState("");
-  const { data: setores } = useSetoresReceptores();
+  const { hospitais, hospital, hospitalId, setHospitalId } = useHospitalSelecionado();
+  const { data: setores } = useSetoresReceptores({ hospitalId });
 
   const acompanhar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +24,7 @@ function Index() {
   };
 
   const nomesSetores = (setores ?? []).map((s) => s.nome).join(" / ") || "diversos setores";
+  const semHospital = hospitais.length === 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/40 relative">
@@ -37,7 +41,7 @@ function Index() {
       </Button>
 
       <div className="mx-auto max-w-4xl px-6 py-16">
-        <header className="text-center mb-12">
+        <header className="text-center mb-10">
           <p className="text-sm font-medium text-muted-foreground tracking-widest uppercase mb-3">
             Central de Chamados
           </p>
@@ -47,6 +51,39 @@ function Index() {
           </p>
         </header>
 
+        {/* Seletor de hospital sempre visível */}
+        <div className="mx-auto max-w-md mb-10">
+          <Card className="border-2">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0">
+                  <Building2 className="size-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">Hospital</p>
+                  {semHospital ? (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum hospital cadastrado.{" "}
+                      <Link to="/painel-mestre" className="underline">Cadastrar</Link>
+                    </p>
+                  ) : (
+                    <Select value={hospitalId ?? undefined} onValueChange={setHospitalId}>
+                      <SelectTrigger className="border-0 shadow-none px-0 h-auto text-base font-semibold [&>svg]:opacity-60">
+                        <SelectValue placeholder="Selecione um hospital" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hospitais.map((h) => (
+                          <SelectItem key={h.id} value={h.id}>{h.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="grid sm:grid-cols-2 gap-6">
           <Card className="border-2 hover:shadow-lg transition-shadow">
             <CardHeader>
@@ -55,12 +92,14 @@ function Index() {
               </div>
               <CardTitle>Abrir Chamado</CardTitle>
               <CardDescription>
-                Registre uma nova solicitação para {nomesSetores}. Sem necessidade de login.
+                {hospital
+                  ? <>Registre uma nova solicitação em <strong>{hospital.nome}</strong> para {nomesSetores}. Sem necessidade de login.</>
+                  : "Selecione um hospital para abrir um chamado."}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild className="w-full" size="lg">
-                <Link to="/abrir">
+              <Button asChild className="w-full" size="lg" disabled={!hospitalId}>
+                <Link to="/abrir" search={hospitalId ? { hospital: hospitalId } : undefined}>
                   <Send className="size-4 mr-2" /> Abrir Chamado
                 </Link>
               </Button>
@@ -97,20 +136,22 @@ function Index() {
         </div>
 
         <footer className="mt-12 flex flex-col gap-4 items-center justify-center text-sm">
-          <div className="flex flex-wrap gap-2 items-center justify-center">
-            <span className="text-muted-foreground">Equipe interna:</span>
-            {(setores ?? []).map((s) => (
-              <Button asChild key={s.slug} variant="ghost" size="sm">
-                <Link to="/auth/$setor" params={{ setor: s.slug }}>
-                  <span
-                    className="inline-block size-2.5 rounded-full mr-2"
-                    style={{ backgroundColor: s.cor_hex }}
-                  />
-                  <LogIn className="size-4 mr-1.5" /> {s.nome}
-                </Link>
-              </Button>
-            ))}
-          </div>
+          {hospital && (setores ?? []).length > 0 && (
+            <div className="flex flex-wrap gap-2 items-center justify-center">
+              <span className="text-muted-foreground">Equipe interna · {hospital.nome}:</span>
+              {(setores ?? []).map((s) => (
+                <Button asChild key={s.slug} variant="ghost" size="sm">
+                  <Link to="/auth/$setor" params={{ setor: s.slug }}>
+                    <span
+                      className="inline-block size-2.5 rounded-full mr-2"
+                      style={{ backgroundColor: s.cor_hex }}
+                    />
+                    <LogIn className="size-4 mr-1.5" /> {s.nome}
+                  </Link>
+                </Button>
+              ))}
+            </div>
+          )}
           <Link
             to="/painel-mestre"
             className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"

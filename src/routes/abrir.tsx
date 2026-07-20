@@ -12,11 +12,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowLeft, CheckCircle2, Copy, Layers, Loader2, Send } from "lucide-react";
 
-export const Route = createFileRoute("/abrir")({ component: AbrirPage });
+import { z } from "zod";
+import { useHospitalSelecionado } from "@/lib/hospitais";
+import { Building2 } from "lucide-react";
+
+const searchSchema = z.object({ hospital: z.string().uuid().optional() });
+
+export const Route = createFileRoute("/abrir")({
+  component: AbrirPage,
+  validateSearch: (search) => searchSchema.parse(search),
+});
 
 function AbrirPage() {
+  const searchParams = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const { hospitais, hospitalId: selecionado, setHospitalId } = useHospitalSelecionado();
+  const hospitalId = searchParams.hospital ?? selecionado;
   const [setor, setSetor] = useState<string | null>(null);
-  const { data: setores, isLoading } = useSetoresReceptores();
+  const { data: setores, isLoading } = useSetoresReceptores({ hospitalId });
+
+  const hospitalAtual = hospitais.find((h) => h.id === hospitalId) ?? null;
+
+  const trocarHospital = (id: string) => {
+    setHospitalId(id);
+    setSetor(null);
+    navigate({ search: { hospital: id } });
+  };
 
   return (
     <div className="min-h-screen px-4 py-10 bg-gradient-to-br from-background to-accent/40">
@@ -25,18 +46,48 @@ function AbrirPage() {
           <ArrowLeft className="size-4" /> Voltar
         </Link>
 
-        {!setor ? (
+        {hospitais.length > 1 && (
+          <div className="mb-4 rounded-lg border-2 p-3 bg-card flex items-center gap-3">
+            <Building2 className="size-5 text-muted-foreground shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">Hospital</p>
+              <Select value={hospitalId ?? undefined} onValueChange={trocarHospital}>
+                <SelectTrigger className="border-0 shadow-none px-0 h-auto font-semibold [&>svg]:opacity-60">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {hospitais.map((h) => (
+                    <SelectItem key={h.id} value={h.id}>{h.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {!hospitalId ? (
           <Card className="border-2">
             <CardHeader>
-              <CardTitle className="text-2xl">Para qual setor é o chamado?</CardTitle>
-              <CardDescription>Selecione a área responsável pela sua solicitação.</CardDescription>
+              <CardTitle>Selecione um hospital</CardTitle>
+              <CardDescription>Escolha o hospital na tela inicial para abrir um chamado.</CardDescription>
+            </CardHeader>
+          </Card>
+        ) : !setor ? (
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle className="text-2xl">
+                Para qual setor é o chamado?
+              </CardTitle>
+              <CardDescription>
+                {hospitalAtual ? `${hospitalAtual.nome} · ` : ""}Selecione a área responsável pela sua solicitação.
+              </CardDescription>
             </CardHeader>
             <CardContent className="grid sm:grid-cols-2 gap-4">
               {isLoading ? (
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
               ) : !setores?.length ? (
                 <p className="text-sm text-muted-foreground col-span-full">
-                  Nenhum setor disponível no momento.
+                  Nenhum setor disponível neste hospital.
                 </p>
               ) : (
                 setores.map((s) => (

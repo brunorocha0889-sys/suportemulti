@@ -8,14 +8,18 @@ export interface SetorReceptor {
   cor_hex: string;
   cor_fg_hex: string;
   ativo: boolean;
+  hospital_id: string;
 }
 
-export function useSetoresReceptores(opts?: { incluirInativos?: boolean }) {
+export function useSetoresReceptores(opts?: { incluirInativos?: boolean; hospitalId?: string | null }) {
+  const enabled = opts?.hospitalId !== undefined ? !!opts.hospitalId : true;
   return useQuery({
-    queryKey: ["setores-receptores", opts?.incluirInativos ? "all" : "ativos"],
+    queryKey: ["setores-receptores", opts?.incluirInativos ? "all" : "ativos", opts?.hospitalId ?? "any"],
+    enabled,
     queryFn: async () => {
       let q = (supabase as any).from("setores_receptores").select("*").order("nome");
       if (!opts?.incluirInativos) q = q.eq("ativo", true);
+      if (opts?.hospitalId) q = q.eq("hospital_id", opts.hospitalId);
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as SetorReceptor[];

@@ -76,6 +76,33 @@ export type Database = {
           },
         ]
       }
+      hospitais: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       os_counter: {
         Row: {
           ano: number
@@ -135,6 +162,7 @@ export type Database = {
           cor_fg_hex: string
           cor_hex: string
           created_at: string
+          hospital_id: string
           nome: string
           slug: string
         }
@@ -143,6 +171,7 @@ export type Database = {
           cor_fg_hex?: string
           cor_hex?: string
           created_at?: string
+          hospital_id: string
           nome: string
           slug: string
         }
@@ -151,10 +180,19 @@ export type Database = {
           cor_fg_hex?: string
           cor_hex?: string
           created_at?: string
+          hospital_id?: string
           nome?: string
           slug?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "setores_receptores_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitais"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       setores_solicitantes: {
         Row: {
