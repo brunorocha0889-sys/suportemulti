@@ -52,14 +52,14 @@ function AbrirPage() {
             <div className="flex-1">
               <p className="text-xs uppercase tracking-widest text-muted-foreground">Hospital</p>
               <Select value={hospitalId ?? undefined} onValueChange={trocarHospital}>
-                <ST className="border-0 shadow-none px-0 h-auto font-semibold [&>svg]:opacity-60">
-                  <SV placeholder="Selecione" />
-                </ST>
-                <SC>
+                <SelectTrigger className="border-0 shadow-none px-0 h-auto font-semibold [&>svg]:opacity-60">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
                   {hospitais.map((h) => (
-                    <SI key={h.id} value={h.id}>{h.nome}</SI>
+                    <SelectItem key={h.id} value={h.id}>{h.nome}</SelectItem>
                   ))}
-                </SC>
+                </SelectContent>
               </Select>
             </div>
           </div>
