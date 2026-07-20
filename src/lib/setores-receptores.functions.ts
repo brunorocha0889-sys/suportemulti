@@ -32,6 +32,135 @@ export const verificarSenhaMestra = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/* =========================================================================
+ * HOSPITAIS
+ * =======================================================================*/
+
+/** Lista todos os hospitais (inclusive inativos) — exige senha mestra. */
+export const listarHospitaisAdmin = createServerFn({ method: "POST" })
+  .inputValidator((d: { senha: string }) => z.object({ senha: z.string().min(1).max(200) }).parse(d))
+  .handler(async ({ data }) => {
+    checkPassword(data.senha);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("hospitais" as any)
+      .select("*")
+      .order("nome");
+    if (error) throw new Error(error.message);
+    return { hospitais: rows ?? [] };
+  });
+
+/** Cria um novo hospital. */
+export const criarHospital = createServerFn({ method: "POST" })
+  .inputValidator((d: { senha: string; nome: string }) =>
+    z.object({
+      senha: z.string().min(1).max(200),
+      nome: z.string().trim().min(2).max(80),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    checkPassword(data.senha);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const base = slugify(data.nome);
+    if (!base) throw new Error("Nome inválido.");
+    let slug = base;
+    for (let i = 2; i < 100; i++) {
+      const { data: ex } = await supabaseAdmin
+        .from("hospitais" as any).select("slug").eq("slug", slug).maybeSingle();
+      if (!ex) break;
+      slug = `${base}-${i}`;
+    }
+    const { data: created, error } = await supabaseAdmin
+      .from("hospitais" as any)
+      .insert({ slug, nome: data.nome.trim() })
+      .select("id, slug, nome")
+      .single();
+    if (error) throw new Error(error.message);
+    return created as { id: string; slug: string; nome: string };
+  });
+
+/** Ativa/desativa um hospital. */
+export const alternarHospital = createServerFn({ method: "POST" })
+  .inputValidator((d: { senha: string; id: string; ativo: boolean }) =>
+    z.object({
+      senha: z.string().min(1).max(200),
+      id: z.string().uuid(),
+      ativo: z.boolean(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    checkPassword(data.senha);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("hospitais" as any).update({ ativo: data.ativo }).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Renomeia um hospital. */
+export const renomearHospital = createServerFn({ method: "POST" })
+  .inputValidator((d: { senha: string; id: string; nome: string }) =>
+    z.object({
+      senha: z.string().min(1).max(200),
+      id: z.string().uuid(),
+      nome: z.string().trim().min(2).max(80),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    checkPassword(data.senha);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("hospitais" as any).update({ nome: data.nome.trim() }).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Exclui hospital e tudo vinculado (setores/chamados/usuários). */
+export const excluirHospital = createServerFn({ method: "POST" })
+  .inputValidator((d: { senha: string; id: string; confirmacao: string }) =>
+    z.object({
+      senha: z.string().min(1).max(200),
+      id: z.string().uuid(),
+      confirmacao: z.string().min(1).max(80),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    checkPassword(data.senha);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: hosp } = await supabaseAdmin
+      .from("hospitais" as any).select("slug, nome").eq("id", data.id).maybeSingle();
+    if (!hosp) throw new Error("Hospital não encontrado.");
+    if (data.confirmacao !== (hosp as any).nome && data.confirmacao !== (hosp as any).slug) {
+      throw new Error("Confirmação não corresponde ao hospital.");
+    }
+
+    const { data: setores } = await supabaseAdmin
+      .from("setores_receptores" as any).select("slug").eq("hospital_id", data.id);
+    const slugs = ((setores ?? []) as any[]).map((s) => s.slug as string);
+
+    for (const slug of slugs) {
+      const { data: chamados } = await supabaseAdmin
+        .from("chamados").select("id").eq("setor_destino", slug);
+      const ids = ((chamados ?? []) as any[]).map((c) => c.id);
+      if (ids.length) await supabaseAdmin.from("solucoes_chamados").delete().in("chamado_id", ids);
+      await supabaseAdmin.from("chamados").delete().eq("setor_destino", slug);
+      await supabaseAdmin.from("setores_solicitantes" as any).delete().eq("setor_destino", slug);
+      await supabaseAdmin.from("sla_config" as any).delete().eq("setor", slug);
+
+      const { data: perfis } = await supabaseAdmin.from("perfis").select("id").eq("setor", slug);
+      const uids = ((perfis ?? []) as any[]).map((p) => p.id as string);
+      await supabaseAdmin.from("perfis").delete().eq("setor", slug);
+      for (const uid of uids) {
+        await supabaseAdmin.auth.admin.deleteUser(uid).catch(() => {});
+      }
+    }
+
+    const { error } = await supabaseAdmin.from("hospitais" as any).delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 /** Lista todos os setores receptores (inclusive inativos) — exige senha mestra. */
 export const listarSetoresReceptoresAdmin = createServerFn({ method: "POST" })
   .inputValidator((d: { senha: string }) => z.object({ senha: z.string().min(1).max(200) }).parse(d))
