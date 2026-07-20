@@ -179,12 +179,14 @@ export const listarSetoresReceptoresAdmin = createServerFn({ method: "POST" })
 export const criarSetorReceptor = createServerFn({ method: "POST" })
   .inputValidator((d: {
     senha: string;
+    hospital_id: string;
     nome: string;
     cor_hex: string;
     cor_fg_hex: string;
   }) =>
     z.object({
       senha: z.string().min(1).max(200),
+      hospital_id: z.string().uuid(),
       nome: z.string().trim().min(2).max(60),
       cor_hex: z.string().regex(HEX, "Cor inválida"),
       cor_fg_hex: z.string().regex(HEX, "Cor do texto inválida"),
@@ -194,7 +196,12 @@ export const criarSetorReceptor = createServerFn({ method: "POST" })
     checkPassword(data.senha);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Gera slug único
+    // Verifica hospital
+    const { data: hosp } = await (supabaseAdmin as any)
+      .from("hospitais").select("id").eq("id", data.hospital_id).maybeSingle();
+    if (!hosp) throw new Error("Hospital não encontrado.");
+
+    // Gera slug único (globalmente único)
     const base = slugify(data.nome);
     if (!base) throw new Error("Nome inválido para gerar identificador.");
     let slug = base;
@@ -214,6 +221,7 @@ export const criarSetorReceptor = createServerFn({ method: "POST" })
       nome: data.nome.trim(),
       cor_hex: data.cor_hex,
       cor_fg_hex: data.cor_fg_hex,
+      hospital_id: data.hospital_id,
     });
     if (insErr) throw new Error(insErr.message);
 
