@@ -70,8 +70,8 @@ export const criarHospital = createServerFn({ method: "POST" })
       if (!ex) break;
       slug = `${base}-${i}`;
     }
-    const { data: created, error } = await supabaseAdmin
-      .from("hospitais" as any)
+    const { data: created, error } = await (supabaseAdmin as any)
+      .from("hospitais")
       .insert({ slug, nome: data.nome.trim() })
       .select("id, slug, nome")
       .single();
