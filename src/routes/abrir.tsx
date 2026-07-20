@@ -14,7 +14,6 @@ import { ArrowLeft, CheckCircle2, Copy, Layers, Loader2, Send } from "lucide-rea
 
 import { z } from "zod";
 import { useHospitalSelecionado } from "@/lib/hospitais";
-import { Select, SelectContent as SC, SelectItem as SI, SelectTrigger as ST, SelectValue as SV } from "@/components/ui/select";
 import { Building2 } from "lucide-react";
 
 const searchSchema = z.object({ hospital: z.string().uuid().optional() });
