@@ -28,13 +28,21 @@ export function useHospitais(opts?: { incluirInativos?: boolean }) {
 /** Hospital selecionado (persistido em localStorage). */
 export function useHospitalSelecionado() {
   const { data: hospitais } = useHospitais();
-  const [hospitalId, setHospitalIdState] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem(STORAGE_KEY);
-  });
+  const [hospitalId, setHospitalIdState] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-  // Se o hospital salvo não existe mais / inativo, cai para o primeiro.
+  // Lê o valor salvo APÓS a hidratação (evita mismatch SSR e não é ignorado pelo React).
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setHospitalIdState(saved);
+    } catch {}
+    setHydrated(true);
+  }, []);
+
+  // Só valida/faz fallback depois de hidratar e ter a lista carregada.
+  useEffect(() => {
+    if (!hydrated) return;
     if (!hospitais || hospitais.length === 0) return;
     const valid = hospitalId && hospitais.some((h) => h.id === hospitalId);
     if (!valid) {
@@ -42,7 +50,7 @@ export function useHospitalSelecionado() {
       setHospitalIdState(next);
       try { localStorage.setItem(STORAGE_KEY, next); } catch {}
     }
-  }, [hospitais, hospitalId]);
+  }, [hydrated, hospitais, hospitalId]);
 
   const setHospitalId = useCallback((id: string) => {
     setHospitalIdState(id);
@@ -52,3 +60,4 @@ export function useHospitalSelecionado() {
   const hospital = hospitais?.find((h) => h.id === hospitalId) ?? null;
   return { hospitais: hospitais ?? [], hospital, hospitalId, setHospitalId };
 }
+
