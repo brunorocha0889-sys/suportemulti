@@ -158,6 +158,9 @@ function Index() {
           >
             <ShieldCheck className="size-3" /> Painel mestre
           </Link>
+          <p className="text-xs text-muted-foreground pt-2 border-t border-border/50 w-full">
+            Criado e configurado por Bruno Rocha
+          </p>
         </footer>
       </div>
     </div>
