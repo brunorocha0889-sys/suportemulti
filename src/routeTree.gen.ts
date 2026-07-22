@@ -13,6 +13,7 @@ import { Route as PainelMestreRouteImport } from './routes/painel-mestre'
 import { Route as AcompanharRouteImport } from './routes/acompanhar'
 import { Route as AbrirRouteImport } from './routes/abrir'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BlogKpisHelpdeskHospitalarRouteImport } from './routes/blog.kpis-helpdesk-hospitalar'
 import { Route as AuthSetorRouteImport } from './routes/auth.$setor'
 import { Route as AppSetorRouteImport } from './routes/app.$setor'
 
@@ -36,6 +37,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogKpisHelpdeskHospitalarRoute =
+  BlogKpisHelpdeskHospitalarRouteImport.update({
+    id: '/blog/kpis-helpdesk-hospitalar',
+    path: '/blog/kpis-helpdesk-hospitalar',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthSetorRoute = AuthSetorRouteImport.update({
   id: '/auth/$setor',
   path: '/auth/$setor',
@@ -54,6 +61,7 @@ export interface FileRoutesByFullPath {
   '/painel-mestre': typeof PainelMestreRoute
   '/app/$setor': typeof AppSetorRoute
   '/auth/$setor': typeof AuthSetorRoute
+  '/blog/kpis-helpdesk-hospitalar': typeof BlogKpisHelpdeskHospitalarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +70,7 @@ export interface FileRoutesByTo {
   '/painel-mestre': typeof PainelMestreRoute
   '/app/$setor': typeof AppSetorRoute
   '/auth/$setor': typeof AuthSetorRoute
+  '/blog/kpis-helpdesk-hospitalar': typeof BlogKpisHelpdeskHospitalarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +80,7 @@ export interface FileRoutesById {
   '/painel-mestre': typeof PainelMestreRoute
   '/app/$setor': typeof AppSetorRoute
   '/auth/$setor': typeof AuthSetorRoute
+  '/blog/kpis-helpdesk-hospitalar': typeof BlogKpisHelpdeskHospitalarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +91,7 @@ export interface FileRouteTypes {
     | '/painel-mestre'
     | '/app/$setor'
     | '/auth/$setor'
+    | '/blog/kpis-helpdesk-hospitalar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +100,7 @@ export interface FileRouteTypes {
     | '/painel-mestre'
     | '/app/$setor'
     | '/auth/$setor'
+    | '/blog/kpis-helpdesk-hospitalar'
   id:
     | '__root__'
     | '/'
@@ -97,6 +109,7 @@ export interface FileRouteTypes {
     | '/painel-mestre'
     | '/app/$setor'
     | '/auth/$setor'
+    | '/blog/kpis-helpdesk-hospitalar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +119,7 @@ export interface RootRouteChildren {
   PainelMestreRoute: typeof PainelMestreRoute
   AppSetorRoute: typeof AppSetorRoute
   AuthSetorRoute: typeof AuthSetorRoute
+  BlogKpisHelpdeskHospitalarRoute: typeof BlogKpisHelpdeskHospitalarRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -138,6 +152,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/kpis-helpdesk-hospitalar': {
+      id: '/blog/kpis-helpdesk-hospitalar'
+      path: '/blog/kpis-helpdesk-hospitalar'
+      fullPath: '/blog/kpis-helpdesk-hospitalar'
+      preLoaderRoute: typeof BlogKpisHelpdeskHospitalarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/$setor': {
       id: '/auth/$setor'
       path: '/auth/$setor'
@@ -162,6 +183,7 @@ const rootRouteChildren: RootRouteChildren = {
   PainelMestreRoute: PainelMestreRoute,
   AppSetorRoute: AppSetorRoute,
   AuthSetorRoute: AuthSetorRoute,
+  BlogKpisHelpdeskHospitalarRoute: BlogKpisHelpdeskHospitalarRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
